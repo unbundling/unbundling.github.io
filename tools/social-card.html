@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<!-- Source for static/img/social-card.png (1200x630). Render: see README ("Social card"). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../static/css/style.css">
+<style>
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #fff; }
+  .sc { box-sizing: border-box; width: 1200px; height: 630px; padding: 50px 58px 46px; display: flex; flex-direction: column; justify-content: space-between; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 30px; }
+  h1 { font-size: 62px; line-height: 1.06; margin: 0; letter-spacing: -0.015em; }
+  .by { font-size: 19px; color: #3d4651; margin-top: 16px; line-height: 1.5; max-width: 860px; }
+  .by sup { font-size: .7em; }
+  .lg { display: flex; flex-direction: column; align-items: flex-end; gap: 16px; padding-top: 8px; }
+  .lg .m { height: 30px; } .lg .n { height: 44px; }
+  .url { margin-top: auto; display: none; }
+  .teaser { margin: 0; width: auto; left: auto; transform: none; padding: 14px 16px 14px; }
+  .teaser .replay { display: none; }
+  .t-top { margin-bottom: 12px; }
+  .q-h { font-size: 18px; } .opt .lab { font-size: 16.5px; } .q-a { font-size: 17px; } .opt { padding: 9px 10px 8px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<div class="sc">
+  <div class="top">
+    <div>
+      <h1>Unbundling Multimodal<br>Vision Encoding</h1>
+      <div class="by">Ellis Brown, Chris Hoang, Shengyi Qian, Shang-Wen Li, Mike Lewis, Marjan Ghazvininejad, Luke Zettlemoyer, Lucas Beyer, Mengye Ren, Jakob Verbeek, Saining Xie, Hu Xu</div>
+    </div>
+    <div class="lg"><img class="m" src="../static/img/meta.svg" alt="Meta"><img class="n" src="../static/img/nyu.svg" alt="NYU"></div>
+  </div>
+  <div class="teaser">
+    <div class="t-grid">
+      <div class="q answered"><div class="q-h"><b>§3</b> Is separate pretraining needed?</div>
+        <div class="opts"><div class="opt alt"><span class="radio"></span><span class="g" data-glyph="pretrained" data-h="46"></span><span class="lab c-pre">Pretrained encoder</span></div>
+        <div class="opt pick"><span class="radio"></span><span class="g" data-glyph="scratch" data-h="46"></span><span class="lab c-enc">Scratch encoder</span></div></div>
+        <div class="q-a">Separate pretraining is optional.</div></div>
+      <div class="q answered"><div class="q-h"><b>§4</b> Is vision capacity needed?</div>
+        <div class="opts"><div class="opt alt"><span class="radio"></span><span class="g" data-glyph="free" data-h="46"></span><span class="lab c-ef">Encoder-free</span></div>
+        <div class="opt pick"><span class="radio"></span><span class="g" data-glyph="scratch" data-h="46"></span><span class="lab c-enc">Scratch encoder</span></div></div>
+        <div class="q-a">Dedicated vision capacity is key.</div></div>
+      <div class="q answered"><div class="q-h"><b>§5</b> Must capacity precede fusion?</div>
+        <div class="opts"><div class="opt alt"><span class="radio"></span><span class="g" data-glyph="scratch" data-h="46"></span><span class="lab c-enc">Pre-fusion capacity</span></div>
+        <div class="opt pick"><span class="radio"></span><span class="g" data-glyph="infusion" data-h="46"></span><span class="lab c-enc">In-fusion capacity</span></div></div>
+        <div class="q-a">Vision capacity can be in-fusion.</div></div>
+    </div>
+  </div>
+</div>
+<script src="../static/js/viz.js"></script>
+<script>
+  document.documentElement.classList.add("static");
+  document.querySelectorAll("[data-glyph]").forEach((el) => { el.innerHTML = Viz.glyph(el.dataset.glyph, { height: +el.dataset.h }); });
+</script>
+</body>
+</html>
