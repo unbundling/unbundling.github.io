@@ -81,7 +81,7 @@ window.DATA = {
     {
       size: "4B", flops: "1.16×10^22", tpp: 122,
       rows: [
-        { key: "encoderFree", label: "Encoder-free", params: "4.0B", vqa: 42.3, text: 57.1 },
+        { key: "encoderFree", label: "Encoder-free", params: "4.0B", vqa: 42.6, text: 57.0 },  // the Fig. 3 run (Table 2 moves to it)
         { key: "wider", label: "+ wider", params: "4.4B", vqa: 43.1, text: 58.3 },
         { key: "scratch", label: "Scratch encoder", params: "4.4B", vqa: 45.5, text: 57.9 },
       ],

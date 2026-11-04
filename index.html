@@ -289,7 +289,7 @@
     <figcaption><b>Added capacity helps most when reserved for vision tokens and placed early.</b> Every row adds 0.4B parameters to the 1.7B encoder-free backbone (2.6×10<sup>21</sup> FLOPs, 158 tokens per parameter); the vision-only FFN branch in the first eight layers is in-fusion (FFN-only). Strips show the 28 layers: gray is used by all tokens, blue by vision tokens only, and taller is wider.</figcaption>
   </figure>
 
-  <p>Early placement helps most on OCR and chart questions (23.2 vs. 15.5 for encoder-free), which depend on fine visual detail in the raw patch features. With the first eight layers as the default, in-fusion, which also adds vision-only attention projections, holds the same dedicated budget as the encoder on the other side of fusion.</p>
+  <p>Early placement helps most on OCR and chart questions (23.2 vs. 15.4 for encoder-free), which depend on fine visual detail in the raw patch features. With the first eight layers as the default, in-fusion, which also adds vision-only attention projections, holds the same dedicated budget as the encoder on the other side of fusion.</p>
 
   <figure class="wide" id="fig-inf" data-metric="vqa">
     <div class="fig-head">
