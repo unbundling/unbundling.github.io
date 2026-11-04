@@ -39,5 +39,8 @@ Charts are drawn as SVG for the width of their container and redrawn on resize, 
 - [ ] PDF button: arXiv PDF URL, or a hosted copy (`data-todo="pdf"`).
 - [ ] Thread button: tweet thread URL (`data-todo="thread"`).
 - [ ] BibTeX: replace `arXiv:2611.XXXXX`.
-- [ ] Chris Hoang's homepage link.
 - [ ] Re-check numbers in `static/js/data.js` against the final paper.
+
+## Planned
+
+- [ ] Dark mode, after the co-author feedback round. Follow the system setting (`prefers-color-scheme`) with no toggle. Use a near-black blue-gray surface rather than pure black, and lighten each recipe color and the teal accent one step. Move every chart and diagram color in `viz.js` and `main.js` into CSS variables so the SVGs follow the theme. Check the dark palette for contrast and color-blind separation, and review every chart in both themes.
