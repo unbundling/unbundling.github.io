@@ -335,7 +335,7 @@
 <!-- ===================================================================== scale -->
 <section id="scale">
   <p class="kicker">§5.4 · Scale</p>
-  <h2>The comparisons hold from 1.0B to 6.4B</h2>
+  <h2>The comparisons hold from 1B to 6.4B</h2>
   <p>We also train the three recipes on a ladder of backbone sizes and token budgets, growing the vision module with the backbone, and fit one law per recipe in model size and training tokens. The figure shows the runs at 128 tokens per parameter.</p>
 
   <figure class="wide">
@@ -350,7 +350,7 @@
 
   <p>With the encoder held at 0.4B instead, the factor stays near 2.6× at 1.7B and 4B. On text loss and Avg. Text, the three recipes are comparable.</p>
 
-  <aside class="takeaway"><b>Takeaway 3: Dedicated visual capacity can move into the backbone's earliest layers.</b> Placed in the earliest backbone layers, vision-only modules with the encoder's parameter budget are comparable to a from-scratch encoder at every backbone size from 1.0B to 6.4B.</aside>
+  <aside class="takeaway"><b>Takeaway 3: Dedicated visual capacity can move into the backbone's earliest layers.</b> Placed in the earliest backbone layers, vision-only modules with the encoder's parameter budget are comparable to a from-scratch encoder at every backbone size from 1B to 6.4B.</aside>
 </section>
 
 <!-- ===================================================================== practical -->

@@ -115,7 +115,7 @@ window.DATA = {
   // Figure 6. Backbone-size ladder at 128 TPP, vision module grown with the backbone; one fitted law per recipe.
   // x in FLOPs. Curves are the fitted laws evaluated along each recipe's 128-TPP compute.
   ladder: {
-    sizes: ["1.0B", "1.7B", "3.2B", "6.4B"],
+    sizes: ["1B", "1.7B", "3.2B", "6.4B"],
     x: [7.32e20, 2.116e21, 7.8225e21, 3.1229e22],
     vqa: {
       encoderFree: [28.62, 34.13, 39.46, 44.66],

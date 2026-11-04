@@ -335,7 +335,7 @@
         xinfo: (x) => `${L.sizes[L.x.findIndex((v) => Math.abs(v / x - 1) < 0.01)] || ""} backbone · ${plainFlops(x)} FLOPs`,
       };
     };
-    const out = V.lineChart(w, { label: "Per-recipe scaling laws from 1.0B to 6.4B backbones", minPanelW: 320, height: Math.min(330, Math.max(260, w * 0.37)), margin: { l: 50, r: 14, t: 30, b: 52 }, panels: [mk("vqa"), mk("caption")] });
+    const out = V.lineChart(w, { label: "Per-recipe scaling laws from 1B to 6.4B backbones", minPanelW: 320, height: Math.min(330, Math.max(260, w * 0.37)), margin: { l: 50, r: 14, t: 30, b: 52 }, panels: [mk("vqa"), mk("caption")] });
     out.meta[1].ascending = true;
     return out;
   };
