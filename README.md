@@ -1,6 +1,8 @@
 # unbundling.github.io
 
-Project page for **Unbundling Multimodal Vision Encoding**. It is a static site: plain HTML, CSS and JS, with no build step and no external requests.
+Project page for **Unbundling Multimodal Vision Encoding**, live at <https://unbundling.github.io>. It is a static site: plain HTML, CSS and JS, with no build step and no external requests.
+
+GitHub Pages serves the `main` branch from the repository root, so every push to `main` publishes. Preview changes locally first.
 
 ## Preview locally
 
@@ -31,7 +33,7 @@ Charts are drawn as SVG for the width of their container and redrawn on resize, 
 
 `static/img/social-card.png` (1200×630, rendered at 2×) is a screenshot of `tools/social-card.html`. To regenerate it, serve the repo as above and screenshot that page at 1200×630 with a device scale factor of 2. Any headless Chrome works.
 
-## Before going live
+## Before the arXiv release
 
 - [ ] Paper button: arXiv abstract URL (`data-todo="arxiv"` in `index.html`).
 - [ ] PDF button: arXiv PDF URL, or a hosted copy (`data-todo="pdf"`).
@@ -39,4 +41,3 @@ Charts are drawn as SVG for the width of their container and redrawn on resize, 
 - [ ] BibTeX: replace `arXiv:2611.XXXXX`.
 - [ ] Chris Hoang's homepage link.
 - [ ] Re-check numbers in `static/js/data.js` against the final paper.
-- [ ] Make the repository public. Then go to Settings → Pages and choose "Deploy from a branch", with branch `main` and folder `/ (root)`.
