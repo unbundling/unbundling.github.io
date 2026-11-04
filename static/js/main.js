@@ -137,12 +137,15 @@
     });
   });
 
-    const xFlops = (lo, hi) => [[1, plainF(1)], [3, plainF(3)], [10, plainF(10)], [30, plainF(30)]].filter(([v]) => v >= lo && v <= hi);
+  const xFlops = (lo, hi) => [[1, plainF(1)], [3, plainF(3)], [10, plainF(10)], [30, plainF(30)]].filter(([v]) => v >= lo && v <= hi);
   function plainF(z) { return V.flops(z * 1e21); }
   const metricLabel = (m) => (m === "vqa" ? "Avg. VQA (%)" : "Avg. Text (%)");
 
   // ------------------------------------------------------------ figures
   const FIG = {};
+
+  // The two Figure 2 charts sit side by side at one height.
+  const priorH = (w) => Math.min(330, Math.max(256, w * 0.68));
 
   // Figure 2a: share of a fixed lifetime budget spent on encoder pretraining
   FIG.upstream = (w, el) => {
@@ -156,7 +159,7 @@
     series.push({ key: "scratch", name: "Scratch encoder", color: C.enc, marker: "circle", points: [[0, ref]], line: false, r: 5.4 });
     return V.lineChart(w, {
       label: `Average ${m === "vqa" ? "VQA" : "text"} score versus the share of a fixed budget spent on encoder pretraining`,
-      minPanelW: 240, height: Math.min(300, Math.max(232, w * 0.62)), margin: { l: 44, r: 16, t: 14, b: 44 },
+      minPanelW: 240, height: priorH(w), margin: { l: 50, r: 16, t: 16, b: 52 },
       panels: [{
         x: { domain: [-0.35, 4.35], ticks: U.shares.map((s, i) => [i, s === 0 ? "0" : String(s)]), label: "Share of budget on encoder pretraining (%)" },
         y: { domain: yd, ticks: m === "vqa" ? [36, 38, 40, 42, 44] : [50, 52, 54, 56], label: metricLabel(m) },
@@ -167,21 +170,25 @@
     });
   };
 
-  // Figure 7: longer (free) MetaCLIP pretraining raises ImageNet accuracy but not VQA
-  FIG.free = (w) => {
+  // Figure 7: longer (free) MetaCLIP pretraining raises ImageNet accuracy but not VQA.
+  // Drawn at the height of the Figure 2a chart beside it; the compute bars' key is the HTML legend above.
+  FIG.free = (w, el) => {
     const F = D.freePretraining;
     const rows = F.rows.slice().reverse(); // most pretraining on top, scratch at the bottom (as in the paper)
-    const fs = w < 480 ? 12 : 13;
+    const fs = w < 420 ? 13 : 15;
     const showBars = w >= 400;
-    const labelW = 64, gap = 16;
+    const key = el.parentElement.querySelector(".legend");
+    if (key) key.hidden = !showBars;
+    const labelW = 60, gap = 16;
     const avail = w - labelW - 8;
-    const barW = showBars ? Math.max(90, avail * 0.30) : 0;
+    const barW = showBars ? Math.max(76, avail * 0.22) : 0;
     const panW = (avail - barW - (showBars ? 2 : 1) * gap) / 2;
-    const top = 44, rowH = 31, H = top + rows.length * rowH + 44;
+    const H = priorH(w), top = 56, bottom = H - fs - 18;
+    const rowH = (bottom - top) / rows.length;
     const yOf = (i) => top + i * rowH + rowH / 2;
     let g = "";
     // row labels
-    g += V.T(labelW - 6, top - 12, "×10^{21}", { size: fs - 1.5, anchor: "end", color: C.faint });
+    g += V.T(labelW - 6, top - 16, "×10^{21}", { size: fs - 1.5, anchor: "end", color: C.faint });
     rows.forEach((r, i) => {
       g += V.T(labelW - 6, yOf(i) + fs * .34, r.label, { size: fs, anchor: "end", color: r.pre ? C.preDark : C.encDark, weight: 700 });
       if (r.note) g += V.T(labelW - 6, yOf(i) + fs * .34 + fs, r.note, { size: fs - 2.5, anchor: "end", color: C.faint, italic: true });
@@ -189,44 +196,43 @@
     let x0 = labelW + 4;
     // compute bars
     if (showBars) {
-      const sx = V.scale([0, 12], [x0, x0 + barW]);
-      g += V.T(x0, top - 26, "Compute", { size: fs, weight: 700 });
-      g += V.T(x0, top - 12, "pretraining + multimodal", { size: fs - 2, color: C.faint });
+      const sx = V.scale([0, 12], [x0, x0 + barW]), bh = Math.min(22, rowH * 0.5);
+      g += V.T(x0, top - 34, "Compute", { size: fs, weight: 700 }) + V.T(x0, top - 16, "FLOPs", { size: fs - 1.5, color: C.faint });
       rows.forEach((r, i) => {
-        const y = yOf(i) - 8;
-        if (r.pre) g += `<rect x="${V.r1(sx(0))}" y="${V.r1(y)}" width="${V.r1(sx(r.pre) - sx(0) - 1)}" height="16" fill="${C.pre}"/>`;
-        g += `<rect x="${V.r1(sx(r.pre))}" y="${V.r1(y)}" width="${V.r1(sx(r.pre + F.multimodal) - sx(r.pre))}" height="16" rx="2" fill="#c3c8ce"/>`;
+        const y = yOf(i) - bh / 2;
+        if (r.pre) g += `<rect x="${V.r1(sx(0))}" y="${V.r1(y)}" width="${V.r1(sx(r.pre) - sx(0) - 1)}" height="${V.r1(bh)}" fill="${C.pre}"/>`;
+        g += `<rect x="${V.r1(sx(r.pre))}" y="${V.r1(y)}" width="${V.r1(sx(r.pre + F.multimodal) - sx(r.pre))}" height="${V.r1(bh)}" rx="2" fill="#c3c8ce"/>`;
       });
       x0 += barW + gap;
     }
     // dot panels
-    const panel = (title, sub, key, domain, ticks, color) => {
+    const panel = (title, sub, key, domain, ticks) => {
       const sx = V.scale(domain, [x0 + 6, x0 + panW - 6]);
-      let p = V.T(x0, top - 26, title, { size: fs, weight: 700 }) + V.T(x0, top - 12, sub, { size: fs - 2, color: C.faint });
+      let p = V.T(x0, top - 34, title, { size: fs, weight: 700 }) + V.T(x0, top - 16, sub, { size: fs - 1.5, color: C.faint });
       ticks.forEach((t) => {
-        p += `<line x1="${V.r1(sx(t))}" x2="${V.r1(sx(t))}" y1="${top - 4}" y2="${top + rows.length * rowH}" stroke="${C.grid}"/>`;
-        p += V.T(sx(t), top + rows.length * rowH + fs + 6, String(t), { size: fs - 1, anchor: "middle", color: C.muted, cls: "tnum" });
+        p += `<line x1="${V.r1(sx(t))}" x2="${V.r1(sx(t))}" y1="${top - 4}" y2="${V.r1(bottom)}" stroke="${C.grid}"/>`;
+        p += V.T(sx(t), bottom + fs + 6, String(t), { size: fs - 1, anchor: "middle", color: C.muted, cls: "tnum" });
       });
-      p += `<line x1="${V.r1(x0)}" x2="${V.r1(x0 + panW)}" y1="${top + rows.length * rowH}" y2="${top + rows.length * rowH}" stroke="${C.axis}"/>`;
+      p += `<line x1="${V.r1(x0)}" x2="${V.r1(x0 + panW)}" y1="${V.r1(bottom)}" y2="${V.r1(bottom)}" stroke="${C.axis}"/>`;
       const pts = rows.map((r, i) => (r[key] == null ? null : [sx(r[key]), yOf(i), r])).filter(Boolean);
       const pre = pts.filter((q) => q[2].pre);
-      p += `<path d="${pre.map((q, k) => (k ? "L" : "M") + V.r1(q[0]) + "," + V.r1(q[1])).join("")}" fill="none" stroke="${C.pre}" stroke-width="2"/>`;
+      p += `<path d="${pre.map((q, k) => (k ? "L" : "M") + V.r1(q[0]) + "," + V.r1(q[1])).join("")}" fill="none" stroke="${C.pre}" stroke-width="2.2"/>`;
       pts.forEach((q) => {
         const isScratch = !q[2].pre;
-        p += V.marker(isScratch ? "circle" : "diamond", q[0], q[1], 5, isScratch ? C.enc : C.pre);
-        p += V.T(q[0] + (key === "vqa" && !isScratch ? -9 : 9), q[1] + fs * .34, f1(q[2][key]), { size: fs - 1, anchor: key === "vqa" && !isScratch ? "end" : "start", color: C.ink, halo: true, cls: "tnum" });
+        p += V.marker(isScratch ? "circle" : "diamond", q[0], q[1], 6.5, isScratch ? C.enc : C.pre);
+        p += V.T(q[0] + (key === "vqa" ? -11 : 11), q[1] + fs * .34, f1(q[2][key]), { size: fs - 0.5, anchor: key === "vqa" ? "end" : "start", color: C.ink, halo: true, cls: "tnum" });
       });
       if (key === "imagenet") p += V.T(x0 + 8, yOf(rows.length - 1) + fs * .34, "—", { size: fs, color: C.faint });
       x0 += panW + gap;
       return p;
     };
-    g += panel("ImageNet probe (%)", "after pretraining", "imagenet", [79.5, 85.5], [80, 82, 84], C.pre);
-    g += panel("Avg. VQA (%)", "after multimodal training", "vqa", [36.2, 39.8], [37, 38, 39], C.pre);
+    g += panel("ImageNet probe (%)", "after pretraining", "imagenet", [79.5, 86], [80, 82, 84]);
+    g += panel("Avg. VQA (%)", "after all training", "vqa", [35.6, 39.8], [36, 37, 38, 39]);
     const tips = rows.map((r) => ({
       title: r.pre ? `MetaCLIP pretrained with ${r.label}×10²¹ FLOPs` : "Encoder trained from scratch",
       rows: [...(r.imagenet != null ? [{ value: f1(r.imagenet), name: "ImageNet linear probe (%)" }] : []), { value: f1(r.vqa), name: "Avg. VQA (%)" }, { value: "2.7×10²¹", name: "multimodal FLOPs (same for every row)" }],
     }));
-    const hits = rows.map((r, i) => `<rect class="hit-row" data-i="${i}" x="0" y="${top + i * rowH}" width="${w}" height="${rowH}" fill="transparent"/>`).join("");
+    const hits = rows.map((r, i) => `<rect class="hit-row" data-i="${i}" x="0" y="${V.r1(top + i * rowH)}" width="${w}" height="${V.r1(rowH)}" fill="transparent"/>`).join("");
     return { svg: V.svgWrap(w, H, g + hits, { label: "More encoder pretraining raises ImageNet accuracy but not VQA" }), tips, kind: "rows" };
   };
 
@@ -239,14 +245,14 @@
     const yt = m === "vqa" ? { "1.7B": [30, 35, 40, 45], "4B": [35, 40, 45, 50] } : { "1.7B": [45, 50, 55], "4B": [50, 55, 60] };
     return V.lineChart(w, {
       label: `${m === "vqa" ? "Average VQA" : "Average text"} score over lifetime compute`,
-      minPanelW: 250, height: Math.min(290, Math.max(236, w * 0.36)), margin: { l: 44, r: 16, t: 26, b: 44 },
+      minPanelW: 250, height: Math.min(320, Math.max(256, w * 0.39)), margin: { l: 50, r: 16, t: 30, b: 52 },
       panels: sizes.map((sz) => {
         const S = set[sz];
         const series = keys.map((k) => ({ key: k, name: RC[k].name, color: RC[k].color, dark: RC[k].dark, marker: RC[k].marker, points: S.x.map((x, i) => [x, S[k][m][i]]) }));
         const ann = [];
         if (arrows && m === "vqa" && S.multiplier) {
           const M = S.multiplier;
-          ann.push({ type: "arrow", from: [M.to * 0.97, M.y], to: [M.from * 1.03, M.y], label: M.label, labelDy: -8 });
+          ann.push({ type: "arrow", from: [M.to * 0.97, M.y], to: [M.from * 1.03, M.y], label: M.label });
         }
         return {
           title: sz, subtitle: "backbone",
@@ -277,7 +283,7 @@
     }));
     return V.dotPlot(w, {
       label: "Encoder-free variants with the encoder's parameters added versus the scratch encoder",
-      groups, labelW: 170, labelWNarrow: 132, rowH: 29,
+      groups, labelW: 190, labelWNarrow: 160, rowH: 33,
       x: { domain: [33.5, 46.5], ticks: [34, 36, 38, 40, 42, 44, 46], label: "Avg. VQA (%)" },
       side: { header: "Avg. Text" },
     });
@@ -296,11 +302,11 @@
     }));
     return V.dotPlot(w, {
       label: "Added capacity by who uses it and where it sits",
-      groups, labelW: 178, labelWNarrow: 138, iconW: 118, hideIconsNarrow: true, rowH: 29,
+      groups, labelW: 200, labelWNarrow: 184, iconW: 122, hideIconsNarrow: true, rowH: 33,
       x: { domain: [31, 41], ticks: [31, 33, 35, 37, 39, 41], label: "Avg. VQA (%)" },
       refs: [
         { value: CD.refs.encoderFree.vqa, label: "encoder-free", color: C.ef, labelColor: C.efDark, anchor: "end", dx: 4 },
-        { value: CD.refs.scratch.vqa, label: "scratch encoder", color: C.enc, labelColor: C.encDark, anchor: "start", dx: -4 },
+        { value: CD.refs.scratch.vqa, label: "scratch encoder", color: C.enc, labelColor: C.encDark, anchor: "end", dx: 4 },
       ],
       side: { header: "Avg. Text" },
     });
@@ -319,8 +325,8 @@
         series.push({ key: k + "-law", name: RC[k].name, color: RC[k].color, points: curves[k].map((q) => [q[0], q[1]]), noMarkers: true, noHover: true, lw: 1.7, dash: k === "infusion" ? "6 4" : undefined });
         series.push({ key: k, name: RC[k].name, color: RC[k].color, marker: RC[k].marker, points: L.x.map((x, i) => [x, vals[k][i]]), line: false, r: 4.8 });
       });
-      const ann = vals.multipliers.map((M) => ({ type: "arrow", from: [M.to / 1.04, M.y], to: [M.from * 1.04, M.y], label: M.label, labelDy: isV ? -7 : -7 }));
-      if (isV) L.sizes.forEach((s, i) => ann.push({ type: "text", x: L.x[i], y: 26.6, text: s, anchor: "middle", size: 11.5, color: C.faint }));
+      const ann = vals.multipliers.map((M) => ({ type: "arrow", from: [M.to / 1.04, M.y], to: [M.from * 1.04, M.y], label: M.label, prefer: isV ? "right" : "left" }));
+      if (isV) L.sizes.forEach((s, i) => ann.push({ type: "text", x: L.x[i], y: 26.7, text: s, anchor: "middle", size: 13, color: C.faint }));
       return {
         title: isV ? "Avg. VQA (%)" : "Held-out caption loss", subtitle: isV ? "higher is better" : "lower is better",
         x: { domain: xdom, log: true, ticks: xt, label: "Lifetime compute (FLOPs)" },
@@ -329,7 +335,7 @@
         xinfo: (x) => `${L.sizes[L.x.findIndex((v) => Math.abs(v / x - 1) < 0.01)] || ""} backbone · ${plainFlops(x)} FLOPs`,
       };
     };
-    const out = V.lineChart(w, { label: "Per-recipe scaling laws from 1.0B to 6.4B backbones", minPanelW: 280, height: Math.min(300, Math.max(240, w * 0.34)), margin: { l: 44, r: 14, t: 28, b: 44 }, panels: [mk("vqa"), mk("caption")] });
+    const out = V.lineChart(w, { label: "Per-recipe scaling laws from 1.0B to 6.4B backbones", minPanelW: 320, height: Math.min(330, Math.max(260, w * 0.37)), margin: { l: 50, r: 14, t: 30, b: 52 }, panels: [mk("vqa"), mk("caption")] });
     out.meta[1].ascending = true;
     return out;
   };
@@ -347,7 +353,7 @@
     });
     return V.dotPlot(w, {
       label: "Mid-training: average VQA by recipe after continuing a pretrained 1.7B text model",
-      groups: [{ rows }], labelW: 196, labelWNarrow: 150, rowH: 30,
+      groups: [{ rows }], labelW: 218, labelWNarrow: 204, rowH: 34,
       x: { domain: [35, 46], ticks: [35, 37, 39, 41, 43, 45], label: "Avg. VQA (%)" },
       side: { header: "Avg. Text" },
     });
@@ -355,7 +361,7 @@
 
   // Figure 9: time to first token
   FIG.ttft = (w) => V.stackedBars(w, {
-    label: "Time to first token by recipe", labelW: 168, max: 108, prefill: D.ttft.prefill,
+    label: "Time to first token by recipe", labelW: 190, max: 108, prefill: D.ttft.prefill,
     groups: D.ttft.groups, ticks: [0, 20, 40, 60, 80, 100], xlabel: "Time to first token (ms), lower is better",
   });
 
@@ -418,15 +424,15 @@
       <g class="b-pills"><rect/><rect/><rect/></g>
       <text class="b-B" y="${cy + 17}" font-size="50" font-weight="700" text-anchor="middle" fill="${C.ink}">B</text>
       <line class="b-t" x1="446" x2="446" y1="${cy + 94}" y2="${cy + 50}" stroke="#9aa1ab" stroke-width="2.4" marker-end="url(#${ah})"/>
-      <text x="446" y="${cy + 113}" font-size="16" text-anchor="middle" fill="${C.faint}" font-style="italic">text tokens</text>
+      <text x="446" y="${cy + 114}" font-size="17" text-anchor="middle" fill="${C.faint}" font-style="italic">text tokens</text>
       <g class="b-bd"><line y1="${cy - 72}" y2="${cy + 74}" stroke="${C.ink}" stroke-width="1.8" stroke-dasharray="6 5"/>
-        <text class="b-bdl" y="${cy + 94}" font-size="15" fill="${C.muted}" text-anchor="middle">fusion boundary</text></g>
-      <g class="b-call" data-i="0"><text x="6" y="22" font-size="19" font-weight="700"><tspan class="mk"></tspan> Visual prior</text>
-        <text x="6" y="43" font-size="15.5" fill="${C.muted}">from separate pretraining</text><line class="ld" x1="64" y1="51" stroke="${C.muted}" stroke-width="1.5" marker-end="url(#${ah})"/></g>
-      <g class="b-call" data-i="1"><text x="6" y="${H - 27}" font-size="19" font-weight="700"><tspan class="mk"></tspan> Dedicated capacity</text>
-        <text x="6" y="${H - 6}" font-size="15.5" fill="${C.muted}">parameters only vision tokens use</text><line class="ld" x1="94" y1="${H - 47}" stroke="${C.muted}" stroke-width="1.5" marker-end="url(#${ah})"/></g>
-      <g class="b-call" data-i="2"><text x="246" y="22" font-size="19" font-weight="700"><tspan class="mk"></tspan> Pre-fusion placement</text>
-        <text x="246" y="43" font-size="15.5" fill="${C.muted}">runs before vision meets text</text><line class="ld" x1="250" y1="50" stroke="${C.muted}" stroke-width="1.5" marker-end="url(#${ah})"/></g>
+        <text class="b-bdl" y="${cy + 95}" font-size="16.5" fill="${C.muted}" text-anchor="middle">fusion boundary</text></g>
+      <g class="b-call" data-i="0"><text x="6" y="22" font-size="20.5" font-weight="700"><tspan class="mk"></tspan> Visual prior</text>
+        <text x="6" y="43" font-size="17" fill="${C.muted}">from separate pretraining</text><line class="ld" x1="64" y1="51" stroke="${C.muted}" stroke-width="1.5" marker-end="url(#${ah})"/></g>
+      <g class="b-call" data-i="1"><text x="6" y="${H - 27}" font-size="20.5" font-weight="700"><tspan class="mk"></tspan> Dedicated capacity</text>
+        <text x="6" y="${H - 6}" font-size="17" fill="${C.muted}">parameters only vision tokens use</text><line class="ld" x1="94" y1="${H - 47}" stroke="${C.muted}" stroke-width="1.5" marker-end="url(#${ah})"/></g>
+      <g class="b-call" data-i="2"><text x="246" y="22" font-size="20.5" font-weight="700"><tspan class="mk"></tspan> Pre-fusion placement</text>
+        <text x="246" y="43" font-size="17" fill="${C.muted}">runs before vision meets text</text><line class="ld" x1="250" y1="50" stroke="${C.muted}" stroke-width="1.5" marker-end="url(#${ah})"/></g>
     </svg>`;
     const q = (s) => bundleEl.querySelector(s);
     const pills = [...bundleEl.querySelectorAll(".b-pills rect")];

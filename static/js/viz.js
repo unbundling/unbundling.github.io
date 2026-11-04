@@ -182,6 +182,35 @@
       (o.noMarker ? "" : marker(o.marker || rc.marker, w / 2, 7, 4.6, color, { sw: 1.4 })) + `</svg>`;
   }
 
+  /* Factor labels on compute-gap arrows: always above the arrow and within its span, at the spot that covers the
+     least of any plotted line or marker; ties go to the preferred end ("left", "right") or the middle. */
+  function placeArrowLabel(x1, y1, x2, y2, label, fs, polys, prefer) {
+    const tw = String(label).length * fs * 0.56 + 2, th = fs * 0.74;
+    const xa = Math.min(x1, x2) + 4, xb = Math.max(x1, x2) - 4, base = Math.min(y1, y2) - 4;
+    const span = xb - xa;
+    const cands = span <= tw ? [(xa + xb) / 2] : Array.from({ length: 25 }, (_, k) => xa + tw / 2 + (span - tw) * k / 24);
+    const want = prefer === "left" ? 0 : prefer === "right" ? 1 : 0.5;
+    let best = null;
+    cands.forEach((cx) => {
+      const b0 = cx - tw / 2 - 2, b1 = cx + tw / 2 + 2, t0 = base - th - 2, t1 = base + 2;
+      let cover = 0;
+      polys.forEach((pl) => {
+        for (let i = 1; i < pl.length; i++) {
+          const [ax, ay] = pl[i - 1], [bx, by] = pl[i];
+          const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / 1.5));
+          for (let k = 0; k <= n; k++) {
+            const px = ax + (bx - ax) * k / n, py = ay + (by - ay) * k / n;
+            if (px >= b0 && px <= b1 && py >= t0 && py <= t1) cover++;
+          }
+        }
+      });
+      const pos = span > tw ? (cx - xa - tw / 2) / (span - tw) : 0.5;
+      const score = cover * 100 + Math.abs(pos - want);
+      if (!best || score < best.score) best = { score, cx };
+    });
+    return { x: best.cx, y: base };
+  }
+
   // ------------------------------------------------------------- line charts
   /* spec: {
        panels: [{ title, x: {domain, log, ticks:[[v,label]], label}, y: {domain, ticks, label, fmt},
@@ -197,8 +226,8 @@
     const rows = Math.ceil(n / cols);
     const pw = (width - (cols - 1) * gap) / cols;
     const ph = spec.height || Math.max(210, Math.min(300, pw * 0.78));
-    const fs = width < 480 ? 12 : 13;
-    const M = Object.assign({ l: 46, r: 14, t: 26, b: 40 }, spec.margin || {});
+    const fs = width < 420 ? 13 : 15;
+    const M = Object.assign({ l: 50, r: 14, t: 30, b: 50 }, spec.margin || {});
     const rowGap = 18;
     const H = rows * ph + (rows - 1) * rowGap;
     const defs = [], meta = [];
@@ -220,12 +249,12 @@
         const x = sx(v);
         if (x < X0 - 1 || x > X1 + 1) return;
         p += `<line x1="${r1(x)}" x2="${r1(x)}" y1="${r1(Y0)}" y2="${r1(Y0 + 4)}" stroke="${C.axis}" stroke-width="1"/>`;
-        p += T(x, Y0 + fs + 6, lab, { size: fs - 1, anchor: "middle", color: C.muted });
+        p += T(x, Y0 + fs + 5, lab, { size: fs - 1, anchor: "middle", color: C.muted });
       });
       p += `<line x1="${r1(X0)}" x2="${r1(X1)}" y1="${r1(Y0)}" y2="${r1(Y0)}" stroke="${C.axis}" stroke-width="1"/>`;
-      if (P.x.label) p += T((X0 + X1) / 2, Y0 + fs * 2 + 13, P.x.label, { size: fs, anchor: "middle", color: C.ink });
+      if (P.x.label) p += T((X0 + X1) / 2, Y0 + fs * 2 + 14, P.x.label, { size: fs, anchor: "middle", color: C.ink });
       if (P.y.label && (i % cols === 0 || P.y.always)) p += T(cx + 12, (Y0 + Y1) / 2, P.y.label, { size: fs, anchor: "middle", rotate: -90, color: C.ink });
-      if (P.title) p += `<text x="${r1(X0)}" y="${r1(cy + 14)}" font-size="${fs + 1}" font-weight="700" fill="${C.ink}">${rich(P.title, fs + 1)}` +
+      if (P.title) p += `<text x="${r1(X0)}" y="${r1(cy + 16)}" font-size="${fs + 2}" font-weight="700" fill="${C.ink}">${rich(P.title, fs + 2)}` +
         (P.subtitle ? `<tspan dx="7" font-weight="400" font-size="${fs - 1}" fill="${C.faint}">${esc(P.subtitle)}</tspan>` : "") + `</text>`;
       // reference lines + bands
       (P.ann || []).filter((a) => a.type === "hline").forEach((a) => {
@@ -234,9 +263,11 @@
         if (a.label) p += T(a.labelX != null ? sx(a.labelX) : X1 - 2, y + (a.labelDy || -6), a.label, { size: fs - 1, color: a.labelColor || a.color || C.muted, anchor: a.anchor || "end", halo: true });
       });
       // series
-      const smeta = [];
+      const smeta = [], polys = [];
       P.series.forEach((s) => {
         const pts = s.points.filter((q) => q[1] != null).map((q) => [sx(q[0]), sy(q[1]), q[0], q[1], q[2]]);
+        if (pts.length > 1 && s.line !== false) polys.push(pts.map((q) => [q[0], q[1]]));
+        if (!s.noMarkers) pts.forEach((q) => polys.push([[q[0] - 5, q[1] - 5], [q[0] + 5, q[1] - 5], [q[0] + 5, q[1] + 5], [q[0] - 5, q[1] + 5], [q[0] - 5, q[1] - 5]]));
         if (pts.length > 1 && s.line !== false) {
           p += `<path d="${pts.map((q, k) => (k ? "L" : "M") + r1(q[0]) + "," + r1(q[1])).join("")}" fill="none" stroke="${s.color}" stroke-width="${s.lw || 2.2}" stroke-linejoin="round" stroke-linecap="round"${s.dash ? ` stroke-dasharray="${s.dash}"` : ""}${s.opacity ? ` opacity="${s.opacity}"` : ""}/>`;
         }
@@ -254,7 +285,10 @@
           defs.push(arrowDef(id, a.color || C.ink));
           const x1 = sx(a.from[0]), y1 = sy(a.from[1]), x2 = sx(a.to[0]), y2 = sy(a.to[1]);
           p += `<line x1="${r1(x1)}" y1="${r1(y1)}" x2="${r1(x2)}" y2="${r1(y2)}" stroke="${a.color || C.ink}" stroke-width="1.5" marker-end="url(#${id})"/>`;
-          if (a.label) p += T((x1 + x2) / 2 + (a.labelDx || 0), Math.min(y1, y2) + (a.labelDy || -7), a.label, { size: fs, weight: 700, anchor: "middle", color: a.labelColor || C.ink, halo: true });
+          if (a.label) {
+            const L = placeArrowLabel(x1, y1, x2, y2, a.label, fs, polys, a.prefer);
+            p += T(L.x, L.y, a.label, { size: fs, weight: 700, anchor: "middle", color: a.labelColor || C.ink, halo: true });
+          }
         } else if (a.type === "text") {
           const x = a.px ? cx + a.x * pw : sx(a.x), y = a.py ? cy + a.y * ph : sy(a.y);
           (Array.isArray(a.text) ? a.text : [a.text]).forEach((line, k) => {
@@ -280,26 +314,26 @@
      spec: { groups:[{title, sub, rows:[{label, sub, icon, value, color, marker, valueText, side, tip, strong}]}],
              x:{domain, ticks, label}, refs:[{value, label, color}], side:{header, fmt}, labelW, iconW } */
   function dotPlot(width, spec) {
-    const fs = width < 480 ? 12.5 : 13.5;
+    const fs = width < 420 ? 13.5 : 15;
     const stacked = width < (spec.stackBelow || 540);  // narrow screens: each row's label sits above its dot line
     const narrow = width < 640;
     const labelW = stacked ? 0 : (narrow ? (spec.labelWNarrow || spec.labelW * 0.8) : spec.labelW);
     const iconW = stacked ? 0 : (narrow && spec.hideIconsNarrow ? 0 : (spec.iconW || 0));
-    const sideW = spec.side && !stacked ? (narrow ? 48 : 64) : 0;
+    const sideW = spec.side && !stacked ? (narrow ? 60 : 66) : 0;
     const X0 = stacked ? 10 : labelW + iconW + 14, X1 = width - sideW - (stacked ? 44 : 26);
     const sx = scale(spec.x.domain, [X0, X1]);
-    const rowH = stacked ? 46 : (spec.rowH || 30), top = spec.refs && spec.refs.some((r) => r.label) ? 30 : 10;
+    const rowH = stacked ? 50 : (spec.rowH || 33), top = (spec.refs && spec.refs.some((r) => r.label)) || (spec.side && !stacked) ? 34 : 12;
     let y = top, g = "", hits = [];
     const tips = [];
     spec.groups.forEach((grp, gi) => {
       if (grp.title) {
         y += gi ? 16 : 2;
-        g += T(0, y + fs, grp.title, { size: fs, weight: 700, color: C.ink });
-        if (grp.sub) g += T(0, y + fs * 2 + 3, grp.sub, { size: fs - 1.5, color: C.faint, italic: true });
-        y += grp.sub ? fs * 2 + 10 : fs + 8;
+        g += T(0, y + fs + 1, grp.title, { size: fs + 1, weight: 700, color: C.ink });
+        if (grp.sub) g += T(3, y + fs * 2 + 5, grp.sub, { size: fs - 1.5, color: C.faint, italic: true });
+        y += grp.sub ? fs * 2 + 12 : fs + 9;
       }
       grp.rows.forEach((row) => {
-        const cy = stacked ? y + rowH - 13 : y + rowH / 2;
+        const cy = stacked ? y + rowH - 14 : y + rowH / 2;
         g += `<line x1="${r1(X0)}" x2="${r1(X1)}" y1="${r1(cy)}" y2="${r1(cy)}" stroke="${C.grid}" stroke-width="1"/>`;
         if (stacked) {
           g += T(0, y + fs + 2, row.label, { size: fs, color: row.labelColor || C.ink, weight: row.strong ? 700 : undefined });
@@ -343,13 +377,13 @@
   // ------------------------------------------------------------ stacked bars
   /* Horizontal bars from zero with a shared first segment (Figure 9). */
   function stackedBars(width, spec) {
-    const fs = width < 480 ? 12.5 : 13.5;
+    const fs = width < 420 ? 13.5 : 15;
     const stacked = width < 540;
     const labelW = stacked ? 0 : spec.labelW;
-    const X0 = stacked ? 0 : labelW + 12, X1 = width - (stacked ? 108 : 120);
+    const X0 = stacked ? 6 : labelW + 12, X1 = width - (stacked ? 108 : 120);
     const sx = scale([0, spec.max], [X0, X1]);
-    const rowH = stacked ? 42 : 30, barH = stacked ? 15 : 18;
-    let y = 30, g = "";
+    const rowH = stacked ? 46 : 34, barH = stacked ? 16 : 20;
+    let y = 38, g = "";
     const tips = [], hits = [];
     const hatchId = nextId("hatch");
     g += `<defs><pattern id="${hatchId}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="${C.motLight}"/><line x1="0" y1="0" x2="0" y2="6" stroke="#fff" stroke-width="2.2"/></pattern></defs>`;
@@ -384,15 +418,16 @@
     const bottom = y + 4;
     let axis = "";
     spec.ticks.forEach((t) => {
-      axis += `<line x1="${r1(sx(t))}" x2="${r1(sx(t))}" y1="22" y2="${r1(bottom)}" stroke="${C.grid}" stroke-width="1"/>`;
+      axis += `<line x1="${r1(sx(t))}" x2="${r1(sx(t))}" y1="30" y2="${r1(bottom)}" stroke="${C.grid}" stroke-width="1"/>`;
       axis += T(sx(t), bottom + fs + 6, String(t), { size: fs - 1, anchor: "middle", color: C.muted, cls: "tnum" });
     });
     axis += `<line x1="${r1(X0)}" x2="${r1(X1)}" y1="${r1(bottom)}" y2="${r1(bottom)}" stroke="${C.axis}" stroke-width="1"/>`;
-    axis += T((X0 + X1) / 2, bottom + fs * 2 + 12, spec.xlabel, { size: fs, anchor: "middle" });
+    axis += T(stacked ? width / 2 : (X0 + X1) / 2, bottom + fs * 2 + 12, spec.xlabel, { size: fs, anchor: "middle" });
     // prefill bracket at top
     const id = nextId("ah");
-    axis += `<defs>${arrowDef(id, C.muted)}</defs><line x1="${r1(X0)}" x2="${r1(bx)}" y1="14" y2="14" stroke="${C.muted}" stroke-width="1.2" marker-end="url(#${id})" marker-start="url(#${id})"/>`;
-    axis += T((X0 + bx) / 2, 9, `backbone prefill (${Math.round(spec.prefill)} ms)`, { size: fs - 1.5, anchor: "middle", color: C.muted });
+    axis += `<defs>${arrowDef(id, C.muted)}</defs><line x1="${r1(X0)}" x2="${r1(bx)}" y1="22" y2="22" stroke="${C.muted}" stroke-width="1.2" marker-end="url(#${id})" marker-start="url(#${id})"/>`;
+    const pl = `backbone prefill (${Math.round(spec.prefill)} ms)`, fits = pl.length * (fs - 1.5) * 0.5 < bx - X0;
+    axis += T(fits ? (X0 + bx) / 2 : X0, 15, pl, { size: fs - 1.5, anchor: fits ? "middle" : "start", color: C.muted });
     const H = bottom + fs * 2 + 20;
     return { svg: svgWrap(width, H, axis + g + hits.join(""), { label: spec.label }), tips, kind: "rows" };
   }
@@ -407,14 +442,14 @@
     const ids = { g: nextId("ag"), b: nextId("ab"), k: nextId("ak") };
     let g = `<defs>${arrowDef(ids.g, dk)}${arrowDef(ids.b, C.enc)}${arrowDef(ids.k, ink)}</defs>`;
     const ln = (d, col, dash, arrow = true, w = 1.8) => `<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}"${dash ? ' stroke-dasharray="4 3.5"' : ""}${arrow ? ` marker-end="url(#${col === C.enc ? ids.b : col === ink ? ids.k : ids.g})"` : ""}/>`;
-    const box = (x, y, w, lab) => `<rect x="${x}" y="${y - 17}" width="${w}" height="34" rx="7" fill="${C.shared}" stroke="${C.sharedStroke}" stroke-width="1.6"/>` + T(x + w / 2, y + 6, lab, { size: 15, anchor: "middle", weight: 700, color: ink });
-    const vbox = (x, y, w, lab, dashed) => `<rect class="vmod${dashed ? " attn" : ""}" x="${x}" y="${y - 17}" width="${w}" height="34" rx="7" fill="${C.encFill}" stroke="${C.inf}" stroke-width="1.8"${dashed ? ' stroke-dasharray="4 3"' : ""}/>` + T(x + w / 2, y + 6, lab, { size: 15, anchor: "middle", weight: 700, color: C.encDark, cls: dashed ? "attn" : "" });
-    const norm = (x, y) => `<rect x="${x - 11}" y="${y - 11}" width="22" height="22" rx="6" fill="#fff" stroke="${dk}" stroke-width="1.4"/>` + T(x, y + 4.5, "N", { size: 12.5, anchor: "middle", color: ink });
+    const box = (x, y, w, lab) => `<rect x="${x}" y="${y - 17}" width="${w}" height="34" rx="7" fill="${C.shared}" stroke="${C.sharedStroke}" stroke-width="1.6"/>` + T(x + w / 2, y + 6, lab, { size: 16, anchor: "middle", weight: 700, color: ink });
+    const vbox = (x, y, w, lab, dashed) => `<rect class="vmod${dashed ? " attn" : ""}" x="${x}" y="${y - 17}" width="${w}" height="34" rx="7" fill="${C.encFill}" stroke="${C.inf}" stroke-width="1.8"${dashed ? ' stroke-dasharray="4 3"' : ""}/>` + T(x + w / 2, y + 6, lab, { size: 16, anchor: "middle", weight: 700, color: C.encDark, cls: dashed ? "attn" : "" });
+    const norm = (x, y) => `<rect x="${x - 11}" y="${y - 11}" width="22" height="22" rx="6" fill="#fff" stroke="${dk}" stroke-width="1.4"/>` + T(x, y + 4.7, "N", { size: 13.5, anchor: "middle", color: ink });
     const plus = (x, y, blue) => `<circle cx="${x}" cy="${y}" r="10" fill="#fff" stroke="${blue ? C.enc : ink}" stroke-width="1.6"${blue ? ' stroke-dasharray="3 2.5"' : ""}/>` + T(x, y + 5.2, "+", { size: 16, anchor: "middle", weight: 700, color: blue ? C.enc : ink });
     // stream
     g += `<rect x="6" y="${Y - 15}" width="${W - 12}" height="30" rx="15" fill="#f1f2f4"/>`;
-    g += T(W / 2 - 40, Y - 22, "shared residual stream", { size: 12.5, anchor: "middle", color: C.muted });
-    g += T(10, Y - 22, "x_{ℓ}", { size: 15, weight: 700 }) + T(W - 10, Y - 22, "x_{ℓ+1}", { size: 15, weight: 700, anchor: "end" });
+    g += T(W / 2 - 40, Y - 22, "shared residual stream", { size: 14, anchor: "middle", color: C.muted });
+    g += T(10, Y - 22, "x_{ℓ}", { size: 16.5, weight: 700 }) + T(W - 10, Y - 22, "x_{ℓ+1}", { size: 16.5, weight: 700, anchor: "end" });
     g += `<rect x="14" y="${Y - 5}" width="9" height="9" rx="2" fill="${C.enc}"/><rect x="25" y="${Y - 5}" width="9" height="9" rx="2" fill="${C.textStroke}"/>`;
     g += ln(`M36,${Y} L302,${Y}`, ink, false, false, 2.2) + ln(`M322,${Y} L460,${Y}`, ink, false, false, 2.2) + ln(`M480,${Y} L${W - 12},${Y}`, ink, false, true, 2.2);
     g += plus(312, Y) + plus(470, Y);
@@ -439,12 +474,12 @@
     const tcol = C.textStroke, vcol = C.enc;
     let g = `<defs>${arrowDef(ids.t, tcol)}${arrowDef(ids.v, vcol)}</defs>`;
     const ln = (d, col, arrow = true, w = 1.8) => `<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}"${arrow ? ` marker-end="url(#${col === tcol ? ids.t : ids.v})"` : ""}/>`;
-    const box = (x, y, w, lab, t) => `<rect x="${x}" y="${y - 16}" width="${w}" height="32" rx="7" fill="${t ? C.textFill : C.encFill}" stroke="${t ? tcol : vcol}" stroke-width="1.6"/>` + T(x + w / 2, y + 5.5, lab, { size: 14.5, anchor: "middle", weight: 700, color: t ? C.textDark : C.encDark });
-    const norm = (x, y, col) => `<rect x="${x - 10}" y="${y - 10}" width="20" height="20" rx="5.5" fill="#fff" stroke="${col}" stroke-width="1.4"/>` + T(x, y + 4.2, "N", { size: 11.5, anchor: "middle", color: ink });
+    const box = (x, y, w, lab, t) => `<rect x="${x}" y="${y - 16}" width="${w}" height="32" rx="7" fill="${t ? C.textFill : C.encFill}" stroke="${t ? tcol : vcol}" stroke-width="1.6"/>` + T(x + w / 2, y + 5.5, lab, { size: 15.5, anchor: "middle", weight: 700, color: t ? C.textDark : C.encDark });
+    const norm = (x, y, col) => `<rect x="${x - 10}" y="${y - 10}" width="20" height="20" rx="5.5" fill="#fff" stroke="${col}" stroke-width="1.4"/>` + T(x, y + 4.5, "N", { size: 12.5, anchor: "middle", color: ink });
     const plus = (x, y, col) => `<circle cx="${x}" cy="${y}" r="9" fill="#fff" stroke="${col}" stroke-width="1.6"/>` + T(x, y + 5, "+", { size: 15, anchor: "middle", weight: 700, color: col });
     // streams
-    g += `<rect x="6" y="${Yt - 26}" width="${W - 12}" height="22" rx="11" fill="#eef6ea"/>` + T(W / 2, Yt - 31, "text residual stream", { size: 12, anchor: "middle", color: C.textDark });
-    g += `<rect x="6" y="${Yv + 4}" width="${W - 12}" height="22" rx="11" fill="#eaf0ff"/>` + T(W / 2, Yv + 41, "vision residual stream", { size: 12, anchor: "middle", color: C.encDark });
+    g += `<rect x="6" y="${Yt - 26}" width="${W - 12}" height="22" rx="11" fill="#eef6ea"/>` + T(W / 2, Yt - 31, "text residual stream", { size: 13.5, anchor: "middle", color: C.textDark });
+    g += `<rect x="6" y="${Yv + 4}" width="${W - 12}" height="22" rx="11" fill="#eaf0ff"/>` + T(W / 2, Yv + 42, "vision residual stream", { size: 13.5, anchor: "middle", color: C.encDark });
     const ys = Yt - 15, yv = Yv + 15;
     g += ln(`M14,${ys} L250,${ys}`, tcol, false, 2.2) + plus(260, ys, tcol) + ln(`M269,${ys} L360,${ys}`, tcol, false, 2.2) + plus(370, ys, tcol) + ln(`M379,${ys} L${W - 12},${ys}`, tcol, true, 2.2);
     g += ln(`M14,${yv} L250,${yv}`, vcol, false, 2.2) + plus(260, yv, vcol) + ln(`M269,${yv} L360,${yv}`, vcol, false, 2.2) + plus(370, yv, vcol) + ln(`M379,${yv} L${W - 12},${yv}`, vcol, true, 2.2);
@@ -456,7 +491,7 @@
     });
     // joint attention
     g += `<rect x="136" y="${Yt - 2}" width="50" height="${Yv - Yt + 4}" rx="8" fill="${C.shared}" stroke="${C.sharedStroke}" stroke-width="1.6"/>`;
-    g += T(161, Ya + 1, "Attn", { size: 15, anchor: "middle", weight: 700, color: ink }) + T(161, Ya + 17, "joint", { size: 11.5, anchor: "middle", color: C.muted });
+    g += T(161, Ya + 1, "Attn", { size: 16, anchor: "middle", weight: 700, color: ink }) + T(161, Ya + 18, "joint", { size: 13, anchor: "middle", color: C.muted });
     return svgWrap(W, H, g, { fluid: true, label: "Mixture-of-transformers block: separate text and vision streams that interact only through joint attention", cls: "schematic" });
   }
 

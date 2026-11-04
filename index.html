@@ -21,6 +21,13 @@
   <link rel="stylesheet" href="static/css/style.css">
 </head>
 <body>
+<!-- Protocol icons: the teaser strip and the protocol cards both use these. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-data" viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.75" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 5.5v13c0 1.5 3.4 2.75 7.5 2.75s7.5-1.25 7.5-2.75v-13M4.5 12c0 1.5 3.4 2.75 7.5 2.75s7.5-1.25 7.5-2.75" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+  <symbol id="ic-schedule" viewBox="0 0 24 24"><circle cx="5" cy="5" r="1.8" fill="currentColor"/><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="5" cy="19" r="1.8" fill="currentColor"/><path d="M5 6.8v3.4M5 13.8v3.4" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="3.5" width="11" height="3" rx="1.5" fill="currentColor" opacity=".45"/><rect x="9" y="10.5" width="8" height="3" rx="1.5" fill="currentColor" opacity=".45"/><rect x="9" y="17.5" width="11" height="3" rx="1.5" class="t-acc"/></symbol>
+  <symbol id="ic-compute" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="none" class="t-acc-s" stroke-width="1.7"/><rect x="9.5" y="9.5" width="5" height="5" rx="1" class="t-acc"/><path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3" class="t-acc-s" stroke-width="1.5"/></symbol>
+  <symbol id="ic-backbone" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.2" opacity=".7"><path d="M4 5l8 7-8 7M20 5l-8 7 8 7M4 5l8-2 8 2M4 19l8 2 8-2M4 5v14M20 5v14M12 3v18"/></g><g fill="currentColor"><circle cx="4" cy="5" r="1.9"/><circle cx="4" cy="19" r="1.9"/><circle cx="20" cy="5" r="1.9"/><circle cx="20" cy="19" r="1.9"/><circle cx="12" cy="12" r="2.1"/><circle cx="12" cy="3" r="1.6"/><circle cx="12" cy="21" r="1.6"/></g></symbol>
+</svg>
 
 <nav class="toc" aria-label="Contents">
   <a href="#top">Overview</a>
@@ -64,7 +71,7 @@
     <img src="static/img/meta.svg" alt="Meta FAIR" class="logo-meta">
     <img src="static/img/nyu.svg" alt="New York University" class="logo-nyu">
   </div>
-  <p class="notes"><sup>*</sup>Equal contribution, ordered randomly &nbsp;·&nbsp; <sup>†</sup>Equal advising</p>
+  <p class="notes"><span><sup>*</sup>Equal contribution, ordered randomly</span> &nbsp;·&nbsp; <span><sup>†</sup>Equal advising</span></p>
 
   <nav class="buttons" aria-label="Paper links">
     <a class="btn primary" href="#" data-todo="arxiv">
@@ -87,16 +94,16 @@
   <div class="t-top">
     <span class="t-sec"><b>§2</b> Controlled</span>
     <span class="t-item">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.75" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 5.5v13c0 1.5 3.4 2.75 7.5 2.75s7.5-1.25 7.5-2.75v-13M4.5 12c0 1.5 3.4 2.75 7.5 2.75s7.5-1.25 7.5-2.75" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+      <svg aria-hidden="true"><use href="#ic-data"/></svg>
       Common data</span>
     <span class="t-item">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="5" r="1.8" fill="currentColor"/><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="5" cy="19" r="1.8" fill="currentColor"/><path d="M5 6.8v3.4M5 13.8v3.4" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="3.5" width="11" height="3" rx="1.5" fill="currentColor" opacity=".45"/><rect x="9" y="10.5" width="8" height="3" rx="1.5" fill="currentColor" opacity=".45"/><rect x="9" y="17.5" width="11" height="3" rx="1.5" class="t-acc"/></svg>
+      <svg aria-hidden="true"><use href="#ic-schedule"/></svg>
       Training schedule</span>
     <span class="t-item">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="none" class="t-acc-s" stroke-width="1.7"/><rect x="9.5" y="9.5" width="5" height="5" rx="1" class="t-acc"/><path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3" class="t-acc-s" stroke-width="1.5"/></svg>
+      <svg aria-hidden="true"><use href="#ic-compute"/></svg>
       Lifetime compute</span>
     <span class="t-item">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.2" opacity=".7"><path d="M4 5l8 7-8 7M20 5l-8 7 8 7M4 5l8-2 8 2M4 19l8 2 8-2M4 5v14M20 5v14M12 3v18"/></g><g fill="currentColor"><circle cx="4" cy="5" r="1.9"/><circle cx="4" cy="19" r="1.9"/><circle cx="20" cy="5" r="1.9"/><circle cx="20" cy="19" r="1.9"/><circle cx="12" cy="12" r="2.1"/><circle cx="12" cy="3" r="1.6"/><circle cx="12" cy="21" r="1.6"/></g></svg>
+      <svg aria-hidden="true"><use href="#ic-backbone"/></svg>
       One backbone</span>
   </div>
   <div class="t-grid">
@@ -173,24 +180,39 @@
   <p>Published models differ in data, architecture, training stages, and compute, so comparing them cannot isolate any one choice. Controlled studies of pretrained encoders hold the multimodal stage fixed, but they vary <em>which</em> prior an encoder imports rather than <em>whether</em> it needs one, and they treat encoder pretraining as free, though SigLIP&nbsp;2, for example, trains on 40B image–text samples. We instead run every training stage ourselves, from random initialization.</p>
   <div class="cards wide">
     <div class="card">
-      <h4>Common data</h4>
-      <p>Text from Nemotron-CC v2 and v2.1, and image–text pairs from MetaCLIP 1.2 (English subset). Encoder pretraining uses their alt-text; multimodal training uses captions regenerated once by Qwen2.5-VL-32B for every recipe.</p>
+      <h4><svg aria-hidden="true"><use href="#ic-data"/></svg>Common data</h4>
+      <ul>
+        <li>Text from Nemotron-CC v2 and v2.1</li>
+        <li>Image–text pairs from MetaCLIP 1.2 (English subset)</li>
+        <li>One set of Qwen2.5-VL-32B captions, shared by all recipes</li>
+      </ul>
     </div>
     <div class="card">
-      <h4>One backbone</h4>
-      <p>A dense decoder-only Transformer, mainly in the Qwen3-1.7B and 4B configurations, with one encoder architecture and one optimization recipe.</p>
+      <h4><svg aria-hidden="true"><use href="#ic-schedule"/></svg>Training schedule</h4>
+      <ul>
+        <li>Warmup–stable–decay: any checkpoint can be decayed</li>
+        <li>Budgets from 6.5×10<sup>20</sup> to 2.9×10<sup>22</sup> FLOPs</li>
+        <li>One peak learning rate per backbone size</li>
+      </ul>
     </div>
     <div class="card">
-      <h4>Matched lifetime compute</h4>
+      <h4><svg aria-hidden="true"><use href="#ic-compute"/></svg>Lifetime compute</h4>
       <p class="eq">C<sub>lifetime</sub> = Σ<sub>s</sub> C<sub>s</sub></p>
-      <p>The total compute of every training stage, including any encoder pretraining.</p>
+      <ul>
+        <li>Every training stage counts, encoder pretraining too</li>
+        <li>Recipes are compared at matched lifetime compute</li>
+      </ul>
     </div>
     <div class="card">
-      <h4>Evaluation</h4>
-      <p><b>Avg. VQA</b> over 16 Cambrian benchmarks, after instruction tuning on Cambrian-7M, and <b>Avg. Text</b> over 12 language benchmarks; each averages four category means.</p>
+      <h4><svg aria-hidden="true"><use href="#ic-backbone"/></svg>One backbone</h4>
+      <ul>
+        <li>Dense decoder-only Transformer, trained from scratch</li>
+        <li>Mainly the Qwen3-1.7B and 4B configurations</li>
+        <li>One encoder architecture: a 27-layer, 0.4B ViT</li>
+      </ul>
     </div>
   </div>
-  <p class="aside-note">A warmup–stable–decay schedule lets one run be decayed at several budgets, so at 1.7B and 4B we compare recipes from 6.5×10<sup>20</sup> to 2.9×10<sup>22</sup> FLOPs.</p>
+  <p class="metrics"><b>Avg. VQA</b> averages four category means over 16 Cambrian benchmarks, after instruction tuning on Cambrian-7M. <b>Avg. Text</b> does the same over 12 language benchmarks.</p>
 </section>
 
 <!-- ===================================================================== prior -->
@@ -220,6 +242,10 @@
         <div class="fig-head">
           <div class="sub-title">Longer pretraining, for free: better ImageNet, not better VQA</div>
         </div>
+        <div class="legend tight">
+          <span class="li"><span class="sw" style="--c: var(--pre)"></span>MetaCLIP pretraining</span>
+          <span class="li"><span class="sw" style="--c: #c3c8ce"></span>Multimodal training</span>
+        </div>
         <div class="chart" data-chart="free"></div>
       </div>
     </div>
@@ -228,7 +254,7 @@
 
   <p>Across backbone sizes, MetaCLIP trails at lower budgets and is never clearly ahead of the scratch encoder. Vision should also start early: in from-scratch training, starting with text only for the first 25–75% of training lowers Avg. VQA by 5 points, even with the same image–text data.</p>
 
-  <aside class="takeaway"><span class="tk">Takeaway 1</span> <b>Upstream encoder pretraining offers little advantage.</b> At matched lifetime compute, an encoder trained from scratch with the backbone matches or exceeds encoders pretrained on the same data.</aside>
+  <aside class="takeaway"><b>Takeaway 1: Upstream encoder pretraining offers little advantage.</b> At matched lifetime compute, an encoder trained from scratch with the backbone matches or exceeds encoders pretrained on the same data.</aside>
 </section>
 
 <!-- ===================================================================== capacity -->
@@ -259,7 +285,7 @@
 
   <p>A richer patch embedding doesn't close it either. Embeddings inspired by Gemma&nbsp;4 and Inkling help only when they read higher-resolution images: at the encoder's 224&nbsp;px, a four-layer hierarchical MLP scores 34.5 Avg. VQA against 34.6 for the linear default.</p>
 
-  <aside class="takeaway"><span class="tk">Takeaway 2</span> <b>Visual understanding benefits from dedicated vision capacity.</b> Encoder-free models trail the from-scratch encoder on Avg. VQA. Adding backbone capacity with the same encoder parameter budget does not close the gap.</aside>
+  <aside class="takeaway"><b>Takeaway 2: Visual understanding benefits from dedicated vision capacity.</b> Encoder-free models trail the from-scratch encoder on Avg. VQA. Adding backbone capacity with the same encoder parameter budget does not close the gap.</aside>
 </section>
 
 <!-- ===================================================================== placement -->
@@ -324,7 +350,7 @@
 
   <p>With the encoder held at 0.4B instead, the factor stays near 2.6× at 1.7B and 4B. On text loss and Avg. Text, the three recipes are comparable.</p>
 
-  <aside class="takeaway"><span class="tk">Takeaway 3</span> <b>Dedicated visual capacity can move into the backbone's earliest layers.</b> Placed in the earliest backbone layers, vision-only modules with the encoder's parameter budget are comparable to a from-scratch encoder at every backbone size from 1.0B to 6.4B.</aside>
+  <aside class="takeaway"><b>Takeaway 3: Dedicated visual capacity can move into the backbone's earliest layers.</b> Placed in the earliest backbone layers, vision-only modules with the encoder's parameter budget are comparable to a from-scratch encoder at every backbone size from 1.0B to 6.4B.</aside>
 </section>
 
 <!-- ===================================================================== practical -->
@@ -349,7 +375,7 @@
   </figure>
   <p>The encoder-free model is fastest, but at 1.7B and 2.6×10<sup>21</sup> FLOPs it trails the encoder by 4.9 Avg. VQA points.</p>
 
-  <aside class="takeaway"><span class="tk">Takeaway 4</span> <b>Beyond lifetime compute settings, dedicated capacity still matters most for VQA performance.</b> Our findings hold with zero-cost pretrained encoders and in mid-training. Moving vision capacity in-fusion also reduces time to first token with comparable VQA performance.</aside>
+  <aside class="takeaway"><b>Takeaway 4: Beyond lifetime compute settings, dedicated capacity still matters most for VQA performance.</b> Our findings hold with zero-cost pretrained encoders and in mid-training. Moving vision capacity in-fusion also reduces time to first token with comparable VQA performance.</aside>
 </section>
 
 <!-- ===================================================================== citation -->
