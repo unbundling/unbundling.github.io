@@ -29,8 +29,8 @@
     <li><a href="#setup"><span class="sec">§2</span>Three choices</a></li>
     <li><a href="#prior"><span class="sec">§3</span>Visual prior</a></li>
     <li><a href="#capacity"><span class="sec">§4</span>Dedicated capacity</a></li>
-    <li><a href="#placement"><span class="sec">§5</span>Placement</a></li>
-    <li><a href="#scale"><span class="sec">§5.4</span>Scale</a></li>
+    <li><a href="#placement"><span class="sec">§5</span>Placement</a>
+      <ol><li><a class="sub" href="#scale"><span class="sec">§5.4</span>Scale</a></li></ol></li>
     <li><a href="#practical"><span class="sec">§6</span>In practice</a></li>
     <li><a href="#citation">Citation</a></li>
   </ol>
@@ -93,7 +93,6 @@
     <li><a href="#prior"><span class="sec">§3</span>Visual prior</a></li>
     <li><a href="#capacity"><span class="sec">§4</span>Dedicated capacity</a></li>
     <li><a href="#placement"><span class="sec">§5</span>Placement</a></li>
-    <li><a href="#scale"><span class="sec">§5.4</span>Scale</a></li>
     <li><a href="#practical"><span class="sec">§6</span>In practice</a></li>
     <li><a href="#citation">Citation</a></li>
   </ol>
@@ -368,12 +367,12 @@
 <!-- ===================================================================== scale -->
 <section id="scale">
   <p class="kicker">§5.4 · Scale</p>
-  <h2>The comparisons hold from 1B to 6.4B</h2>
+  <h2>The comparisons hold with scale</h2>
   <p>We also train the three recipes on a ladder of backbone sizes and token budgets, growing the vision module with the backbone, and fit one law per recipe in model size and training tokens. The figure shows the runs at 128 tokens per parameter.</p>
 
   <figure class="viz wide">
     <div class="vh"><div>
-      <h4>Per-recipe scaling laws, 1B to 6.4B</h4>
+      <h4>Per-recipe scaling laws across backbone sizes</h4>
       <p class="dek">Encoder-free's gap to the encoder grows with scale, while in-fusion is nearly indistinguishable from the encoder.</p>
     </div></div>
     <div class="legend">
@@ -387,7 +386,7 @@
 
   <p>With the encoder held at 0.4B instead, the factor stays near 2.6× at 1.7B and 4B. On text loss and Avg. Text, the three recipes are comparable.</p>
 
-  <aside class="takeaway"><b>Takeaway 3: Dedicated visual capacity can move into the backbone's earliest layers.</b> Placed in the earliest backbone layers, vision-only modules with the encoder's parameter budget are comparable to a from-scratch encoder at every backbone size from 1B to 6.4B.</aside>
+  <aside class="takeaway"><b>Takeaway 3: Dedicated visual capacity can move into the backbone's earliest layers.</b> Placed in the earliest backbone layers, vision-only modules with the encoder's parameter budget are comparable to a from-scratch encoder at every backbone size.</aside>
 </section>
 
 <!-- ===================================================================== practical -->

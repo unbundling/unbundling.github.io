@@ -566,27 +566,28 @@
   }
 
   // ------------------------------------------------------------ contents: side list and tab bar
-  const navs = [...document.querySelectorAll(".toc, .tabs")];
+  /* Each list marks the last of its own entries the reader has passed, so the tab bar, which lists only top-level
+     sections, keeps §5 marked while the side list marks §5.4. */
+  const navs = [...document.querySelectorAll(".toc, .tabs")].map((n) => {
+    const links = [...n.querySelectorAll("a")];
+    return { n, links, secs: links.map((a) => document.querySelector(a.getAttribute("href"))), cur: -1 };
+  });
   if (navs.length) {
-    const ids = [...new Set(navs.flatMap((n) => [...n.querySelectorAll("a")].map((a) => a.getAttribute("href"))))];
-    const secs = ids.map((h) => document.querySelector(h)).filter(Boolean);
-    let cur = -1;
     const onScroll = () => {
       const y = window.scrollY + window.innerHeight * 0.3;
-      let c = 0;
-      secs.forEach((s, i) => { if (s.offsetTop <= y) c = i; });
-      if (c === cur) return;
-      cur = c;
-      const id = "#" + secs[c].id;
-      navs.forEach((n) => n.querySelectorAll("a").forEach((a) => {
-        const on = a.getAttribute("href") === id;
-        a.classList.toggle("on", on);
-        // keep the active tab in view when the tab bar scrolls sideways
-        if (on && n.classList.contains("tabs") && n.offsetParent) {
+      navs.forEach((v) => {
+        let c = 0;
+        v.secs.forEach((s, i) => { if (s && s.offsetTop <= y) c = i; });
+        if (c === v.cur) return;
+        v.cur = c;
+        v.links.forEach((a, i) => a.classList.toggle("on", i === c));
+        // keep the marked tab in view when the tab bar scrolls sideways
+        const a = v.links[c];
+        if (v.n.classList.contains("tabs") && v.n.offsetParent) {
           const ol = a.closest("ol"), r = a.getBoundingClientRect(), rr = ol.getBoundingClientRect();
           if (r.left < rr.left || r.right > rr.right - 40) ol.scrollBy({ left: r.left - rr.left - 8, behavior: reduceMotion ? "auto" : "smooth" });
         }
-      }));
+      });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
