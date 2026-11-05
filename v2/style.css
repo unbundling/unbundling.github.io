@@ -317,8 +317,7 @@ figcaption b { color: var(--ink); }
   .toc a { display: block; color: var(--muted); padding: 5px 0 5px 14px; margin-left: -2px; border-left: 2px solid transparent; transition: color .15s, border-color .15s; }
   .toc .sec { display: inline-block; min-width: 2.35em; margin-right: 0; }
   .toc ol ol { border-left: 0; }
-  .toc a.sub { padding-left: calc(14px + 2.35em); padding-top: 2px; font-size: 13.5px; }
-  .toc a.sub .sec { min-width: 0; margin-right: .4em; }
+  .toc a.sub { padding-left: calc(26px + 2.35em); padding-top: 2px; font-size: 13.5px; }
   .toc a:hover { color: var(--ink); }
   .toc a.on { color: var(--ink); border-left-color: var(--accent); }
 }
