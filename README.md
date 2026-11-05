@@ -25,9 +25,14 @@ python3 -m http.server 8971 --bind 127.0.0.1
 | Figure assembly, tooltips, toggles, animations, contents list | `static/js/main.js` |
 | Colors, type and layout (`:root` holds the paper palette) | `static/css/style.css` |
 | Logos, favicon, social card | `static/img/` |
-| TeX Gyre Pagella (Palatino clone, GUST Font License) | `static/fonts/` |
+| TeX Gyre Pagella (Palatino clone, GUST Font License) and Hanken Grotesk (SIL Open Font License, used by `v2/`) | `static/fonts/` |
+| Design draft to compare against the main page (its own HTML, CSS and JS copies; shares `static/js/data.js`, fonts and images) | `v2/` |
 
 Charts are drawn as SVG for the width of their container and redrawn on resize, so they stay sharp on every screen. Palatino is used where it is installed; elsewhere the page falls back to the bundled Pagella.
+
+## v2 design draft
+
+`v2/` (live at <https://unbundling.github.io/v2/>, marked `noindex`) tries a different presentation: one sans family for text and charts, a left-aligned header with a one-sentence lede, figures framed as title, finding, legend, chart, credit and caption, a chaptered teaser, and a contents tab bar on narrow screens. Fold whatever we keep into the main page, then delete `v2/`.
 
 ## Social card
 
