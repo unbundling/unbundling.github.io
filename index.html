@@ -29,15 +29,19 @@
   <symbol id="ic-backbone" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.2" opacity=".7"><path d="M4 5l8 7-8 7M20 5l-8 7 8 7M4 5l8-2 8 2M4 19l8 2 8-2M4 5v14M20 5v14M12 3v18"/></g><g fill="currentColor"><circle cx="4" cy="5" r="1.9"/><circle cx="4" cy="19" r="1.9"/><circle cx="20" cy="5" r="1.9"/><circle cx="20" cy="19" r="1.9"/><circle cx="12" cy="12" r="2.1"/><circle cx="12" cy="3" r="1.6"/><circle cx="12" cy="21" r="1.6"/></g></symbol>
 </svg>
 
+<!-- contents: a side list on wide screens (each entry is the section's finding) -->
 <nav class="toc" aria-label="Contents">
-  <a href="#top">Overview</a>
-  <a href="#setup">Three choices</a>
-  <a href="#prior">Visual prior</a>
-  <a href="#capacity">Dedicated capacity</a>
-  <a href="#placement">Placement</a>
-  <a href="#scale">Scale</a>
-  <a href="#practical">In practice</a>
-  <a href="#citation">Citation</a>
+  <p class="toc-label">Contents</p>
+  <ol>
+    <li><a href="#top">Overview</a></li>
+    <li><a href="#setup"><span class="sec">§2</span>Three choices</a></li>
+    <li><a href="#prior"><span class="sec">§3</span>Visual prior</a></li>
+    <li><a href="#capacity"><span class="sec">§4</span>Dedicated capacity</a></li>
+    <li><a href="#placement"><span class="sec">§5</span>Placement</a>
+      <ol><li><a class="sub" href="#scale">Scale</a></li></ol></li>
+    <li><a href="#practical"><span class="sec">§6</span>In practice</a></li>
+    <li><a href="#citation">Citation</a></li>
+  </ol>
 </nav>
 
 <main class="page">
@@ -89,50 +93,29 @@
   </nav>
 </header>
 
-<!-- ===================================================================== teaser -->
-<figure class="teaser wide" aria-label="Three questions about the vision encoder and their answers">
-  <div class="t-top">
-    <span class="t-sec"><b>§2</b> Controlled</span>
-    <span class="t-item">
-      <svg aria-hidden="true"><use href="#ic-data"/></svg>
-      Common data</span>
-    <span class="t-item">
-      <svg aria-hidden="true"><use href="#ic-schedule"/></svg>
-      Training schedule</span>
-    <span class="t-item">
-      <svg aria-hidden="true"><use href="#ic-compute"/></svg>
-      Lifetime compute</span>
-    <span class="t-item">
-      <svg aria-hidden="true"><use href="#ic-backbone"/></svg>
-      One backbone</span>
+<!-- contents: a sticky tab bar below the side list's breakpoint -->
+<nav class="tabs" aria-label="Sections">
+  <ol>
+    <li><a href="#top">Overview</a></li>
+    <li><a href="#setup"><span class="sec">§2</span>Three choices</a></li>
+    <li><a href="#prior"><span class="sec">§3</span>Visual prior</a></li>
+    <li><a href="#capacity"><span class="sec">§4</span>Dedicated capacity</a></li>
+    <li><a href="#placement"><span class="sec">§5</span>Placement</a></li>
+    <li><a href="#practical"><span class="sec">§6</span>In practice</a></li>
+    <li><a href="#citation">Citation</a></li>
+  </ol>
+</nav>
+
+<!-- ===================================================================== teaser film -->
+<!-- film.js draws every frame into the stage and fills the chapter bar; click the stage or press space to pause. -->
+<figure class="film wide">
+  <div class="film-stage" tabindex="0">
+    <svg viewBox="0 0 960 540" role="img" aria-label="An animated overview of the paper"><g class="film-body"></g></svg>
   </div>
-  <div class="t-grid">
-    <a class="q" href="#prior">
-      <div class="q-h"><b>§3</b> Is separate pretraining needed?</div>
-      <div class="opts">
-        <div class="opt alt"><span class="radio"></span><span class="g" data-glyph="pretrained" data-h="42"></span><span class="lab c-pre">Pretrained encoder</span></div>
-        <div class="opt pick"><span class="radio"></span><span class="g" data-glyph="scratch" data-h="42"></span><span class="lab c-enc">Scratch encoder</span></div>
-      </div>
-      <div class="q-a">Separate pretraining is optional.</div>
-    </a>
-    <a class="q" href="#capacity">
-      <div class="q-h"><b>§4</b> Is vision capacity needed?</div>
-      <div class="opts">
-        <div class="opt alt"><span class="radio"></span><span class="g" data-glyph="free" data-h="42"></span><span class="lab c-ef">Encoder-free</span></div>
-        <div class="opt pick"><span class="radio"></span><span class="g" data-glyph="scratch" data-h="42"></span><span class="lab c-enc">Scratch encoder</span></div>
-      </div>
-      <div class="q-a">Dedicated vision capacity is key.</div>
-    </a>
-    <a class="q" href="#placement">
-      <div class="q-h"><b>§5</b> Must capacity precede fusion?</div>
-      <div class="opts">
-        <div class="opt alt"><span class="radio"></span><span class="g" data-glyph="scratch" data-h="42"></span><span class="lab c-enc">Pre-fusion capacity</span></div>
-        <div class="opt pick"><span class="radio"></span><span class="g" data-glyph="infusion" data-h="42"></span><span class="lab c-enc">In-fusion capacity</span></div>
-      </div>
-      <div class="q-a">Vision capacity can be in-fusion.</div>
-    </a>
+  <div class="chapters">
+    <button class="ch-btn" type="button" aria-label="Play"></button>
+    <div class="ch-list"></div>
   </div>
-  <button class="replay" type="button" aria-label="Replay the animation">↻ replay</button>
 </figure>
 
 <!-- ===================================================================== summary -->
@@ -160,7 +143,11 @@
   <h2>Three choices, bundled</h2>
   <p>Most multimodal models acquire visual understanding from a vision encoder pretrained for a separate objective, such as image recognition or image–text alignment. Recent recipes discard parts of that setup: Kimi K3 trains its encoder from scratch with the multimodal backbone, and encoder-free models feed image patches straight into the backbone. Each recipe implies a different answer to what the encoder contributes, if anything at all.</p>
 
-  <figure class="wide bundle-fig">
+  <figure class="viz wide bundle-fig">
+    <div class="vh"><div>
+      <h4>What a vision encoder bundles</h4>
+      <p class="dek">A vision encoder bundles three design choices, and each recipe keeps a different subset.</p>
+    </div></div>
     <div class="bundle-grid">
       <div id="bundle" class="bundle"></div>
       <table id="recipes" class="recipes">
@@ -173,7 +160,7 @@
         </tbody>
       </table>
     </div>
-    <figcaption><b>A vision encoder bundles three design choices, and each recipe keeps a different subset.</b> Hover a recipe to see which. In-fusion keeps dedicated vision capacity without the prior or pre-fusion placement.</figcaption>
+    <figcaption>Hover a recipe to see which. In-fusion keeps dedicated vision capacity without the prior or pre-fusion placement.</figcaption>
   </figure>
 
   <h3>One controlled protocol</h3>
@@ -222,13 +209,17 @@
   <p class="question">Does the vision encoder need separate pretraining?</p>
   <p>Under a fixed lifetime budget, encoder pretraining competes with multimodal training for compute. We pretrain the same encoder with four objectives (contrastive MetaCLIP, self-supervised WebSSL, and captioning with Cap and CapPa) on the same images, update it during multimodal training, and compare it with the encoder trained from scratch with the backbone.</p>
 
-  <figure class="wide" id="fig-prior" data-metric="vqa">
+  <figure class="viz wide" id="fig-prior" data-metric="vqa">
+    <div class="vh">
+      <div>
+        <h4>Separate encoder pretraining</h4>
+        <p class="dek">Encoder pretraining is not beneficial at matched lifetime compute, and more of it improves recognition but not VQA, even when it is free.</p>
+      </div>
+      <div class="seg" data-for="fig-prior" role="group" aria-label="Metric"><button data-metric="vqa" aria-pressed="true">Avg. VQA</button><button data-metric="text" aria-pressed="false">Avg. Text</button></div>
+    </div>
     <div class="two-up">
       <div class="sub">
-        <div class="fig-head">
-          <div class="sub-title">One budget, split between pretraining and multimodal training</div>
-          <div class="seg" data-for="fig-prior" role="group" aria-label="Metric"><button data-metric="vqa" aria-pressed="true">VQA</button><button data-metric="text" aria-pressed="false">Text</button></div>
-        </div>
+        <div class="sub-title">One budget, split between pretraining and multimodal training</div>
         <div class="legend tight">
           <span class="li"><span data-key="scratch" data-noline></span>Scratch</span>
           <span class="li"><span data-key="metaclip"></span>MetaCLIP</span>
@@ -236,20 +227,20 @@
           <span class="li"><span data-key="cap"></span>Cap</span>
           <span class="li"><span data-key="cappa"></span>CapPa</span>
         </div>
+        <div class="ytitle" data-ytitle-for="upstream">Avg. VQA (%)</div>
         <div class="chart" data-chart="upstream"></div>
       </div>
       <div class="sub">
-        <div class="fig-head">
-          <div class="sub-title">Longer pretraining, for free: better ImageNet, not better VQA</div>
-        </div>
+        <div class="sub-title">Longer pretraining, for free: better ImageNet, not better VQA</div>
         <div class="legend tight">
           <span class="li"><span class="sw" style="--c: var(--pre)"></span>MetaCLIP pretraining</span>
           <span class="li"><span class="sw" style="--c: #c3c8ce"></span>Multimodal training</span>
         </div>
+        <div class="ytitle spacer" aria-hidden="true">&nbsp;</div>
         <div class="chart" data-chart="free"></div>
       </div>
     </div>
-    <figcaption><b>Encoder pretraining is not beneficial at matched lifetime compute, and more of it improves recognition but not VQA, even when it is free.</b> Left: a 1.7B backbone with a fixed 1.04×10<sup>22</sup>-FLOP budget. Right: MetaCLIP pretraining that is not charged to the budget, followed by the same multimodal stage.</figcaption>
+    <figcaption>Left: a 1.7B backbone with a fixed 1.04×10<sup>22</sup>-FLOP budget. Right: MetaCLIP pretraining that is not charged to the budget, followed by the same multimodal stage.</figcaption>
   </figure>
 
   <p>Across backbone sizes, MetaCLIP trails at lower budgets and is never clearly ahead of the scratch encoder. Vision should also start early: in from-scratch training, starting with text only for the first 25–75% of training lowers Avg. VQA by 5 points, even with the same image–text data.</p>
@@ -264,23 +255,32 @@
   <p class="question">Does visual understanding need capacity that only vision tokens use?</p>
   <p>Encoder-free models drop the encoder and map each image patch into the backbone with a linear embedding. Removing the encoder also removes its parameters and changes how raw patches enter the backbone, so a gap could reflect fewer parameters, a weak patch embedding, or missing dedicated capacity.</p>
 
-  <figure class="wide" id="fig-ef" data-metric="vqa">
-    <div class="fig-head">
-      <div class="legend">
-        <span class="li"><span data-key="encoderFree"></span><span class="c-ef">Encoder-free</span></span>
-        <span class="li"><span data-key="scratch"></span><span class="c-enc">Scratch encoder</span></span>
+  <figure class="viz wide" id="fig-ef" data-metric="vqa">
+    <div class="vh">
+      <div>
+        <h4>Encoder-free versus the scratch encoder</h4>
+        <p class="dek">Encoder-free trails the encoder on Avg. VQA, while Avg. Text stays comparable.</p>
       </div>
       <div class="seg" data-for="fig-ef" role="group" aria-label="Metric"><button data-metric="vqa" aria-pressed="true">Avg. VQA</button><button data-metric="text" aria-pressed="false">Avg. Text</button></div>
     </div>
+    <div class="legend">
+      <span class="li"><span data-key="encoderFree"></span>Encoder-free</span>
+      <span class="li"><span data-key="scratch"></span>Scratch encoder</span>
+    </div>
+    <div class="ytitle" data-ytitle-for="trajEF">Avg. VQA (%)</div>
     <div class="chart" data-chart="trajEF"></div>
-    <figcaption><b>Encoder-free trails the encoder on Avg. VQA, while Avg. Text stays comparable.</b> Each point is a learning-rate-decayed run; arrows mark how much more compute encoder-free needs to match the encoder's Avg. VQA.</figcaption>
+    <figcaption>Each point is a learning-rate-decayed run; arrows mark how much more compute encoder-free needs to match the encoder's Avg. VQA.</figcaption>
   </figure>
 
   <p>Across budgets, encoder-free trails by 2.4–5.5 Avg. VQA points at 1.7B and 2.8–6.4 at 4B. Is that just the encoder's extra parameters? We give the encoder-free backbone the encoder's 0.4B parameters as extra width, depth, or both.</p>
 
-  <figure class="wide narrowish">
+  <figure class="viz wide narrowish">
+    <div class="vh"><div>
+      <h4>Giving encoder-free the encoder's parameters</h4>
+      <p class="dek">Matching total parameters doesn't close the gap.</p>
+    </div></div>
     <div class="chart" data-chart="steelman"></div>
-    <figcaption><b>Matching total parameters doesn't close the gap.</b> The added parameters help Avg. Text, since text tokens use them too, but move Avg. VQA by at most 1.0 point.</figcaption>
+    <figcaption>The added parameters help Avg. Text, since text tokens use them too, but move Avg. VQA by at most 1.0 point.</figcaption>
   </figure>
 
   <p>A richer patch embedding doesn't close it either. Embeddings inspired by Gemma&nbsp;4 and Inkling help only when they read higher-resolution images: at the encoder's 224&nbsp;px, a four-layer hierarchical MLP scores 34.5 Avg. VQA against 34.6 for the linear default.</p>
@@ -295,7 +295,11 @@
   <p class="question">Must that capacity act before vision meets text?</p>
   <p>An encoder's parameters are <em>dedicated</em>, used only by vision tokens, and <em>pre-fusion</em>, run before vision and text interact. To separate the two, we move the encoder's 0.4B-parameter budget <em>in-fusion</em>: into vision-only modules inside the shared backbone.</p>
 
-  <figure class="wide">
+  <figure class="viz wide">
+    <div class="vh"><div>
+      <h4>Two blocks with vision-only modules</h4>
+      <p class="dek">In-fusion vision capacity adds to the shared backbone instead of replacing it.</p>
+    </div></div>
     <div class="schematics">
       <div class="sch"><div class="sch-t"><b class="c-inf">In-fusion</b> vision modules add to one shared stream</div><div data-schematic="infusion"></div></div>
       <div class="sch"><div class="sch-t"><b class="c-mot">MoT</b> separate streams, joint attention</div><div data-schematic="mot"></div></div>
@@ -305,29 +309,38 @@
       <span class="li"><span class="sw sw-text"></span>text tokens only</span>
       <span class="li"><span class="sw sw-vis"></span>vision tokens only</span>
     </div>
-    <figcaption><b>In-fusion vision capacity adds to the shared backbone instead of replacing it.</b> Every token passes through the shared modules; vision tokens also pass through vision-only attention projections and an FFN branch whose outputs add to the shared ones, so attention stays joint and text-only inputs are processed exactly as by the shared backbone alone. In-fusion (FFN-only) omits the dashed modules. MoT instead gives each modality its own modules, so the streams meet only in attention.</figcaption>
+    <figcaption>Every token passes through the shared modules; vision tokens also pass through vision-only attention projections and an FFN branch whose outputs add to the shared ones, so attention stays joint and text-only inputs are processed exactly as by the shared backbone alone. In-fusion (FFN-only) omits the dashed modules. MoT instead gives each modality its own modules, so the streams meet only in attention.</figcaption>
   </figure>
 
   <p>Where should the budget go, and who should use it? Holding it at 0.4B parameters, we vary both.</p>
 
-  <figure class="wide narrowish">
+  <figure class="viz wide narrowish">
+    <div class="vh"><div>
+      <h4>Who uses the added capacity, and where it sits</h4>
+      <p class="dek">Added capacity helps most when reserved for vision tokens and placed early.</p>
+    </div></div>
     <div class="chart" data-chart="capDesign"></div>
-    <figcaption><b>Added capacity helps most when reserved for vision tokens and placed early.</b> Every row adds 0.4B parameters to the 1.7B encoder-free backbone (2.6×10<sup>21</sup> FLOPs, 158 tokens per parameter); the vision-only FFN branch in the first eight layers is in-fusion (FFN-only). Strips show the 28 layers: gray is used by all tokens, blue by vision tokens only, and taller is wider.</figcaption>
+    <figcaption>Every row adds 0.4B parameters to the 1.7B encoder-free backbone (2.6×10<sup>21</sup> FLOPs, 158 tokens per parameter); the vision-only FFN branch in the first eight layers is in-fusion (FFN-only). Strips show the 28 layers: gray is used by all tokens, blue by vision tokens only, and taller is wider.</figcaption>
   </figure>
 
   <p>Early placement helps most on OCR and chart questions (23.2 vs. 15.4 for encoder-free), which depend on fine visual detail in the raw patch features. With the first eight layers as the default, in-fusion, which also adds vision-only attention projections, holds the same dedicated budget as the encoder on the other side of fusion.</p>
 
-  <figure class="wide" id="fig-inf" data-metric="vqa">
-    <div class="fig-head">
-      <div class="legend">
-        <span class="li"><span data-key="encoderFree"></span><span class="c-ef">Encoder-free</span></span>
-        <span class="li"><span data-key="scratch"></span><span class="c-enc">Scratch encoder</span></span>
-        <span class="li"><span data-key="infusion"></span><span class="c-inf">In-fusion</span></span>
+  <figure class="viz wide" id="fig-inf" data-metric="vqa">
+    <div class="vh">
+      <div>
+        <h4>In-fusion versus the pre-fusion encoder</h4>
+        <p class="dek">In-fusion is comparable to the pre-fusion encoder over training.</p>
       </div>
       <div class="seg" data-for="fig-inf" role="group" aria-label="Metric"><button data-metric="vqa" aria-pressed="true">Avg. VQA</button><button data-metric="text" aria-pressed="false">Avg. Text</button></div>
     </div>
+    <div class="legend">
+      <span class="li"><span data-key="encoderFree"></span>Encoder-free</span>
+      <span class="li"><span data-key="scratch"></span>Scratch encoder</span>
+      <span class="li"><span data-key="infusion"></span>In-fusion</span>
+    </div>
+    <div class="ytitle" data-ytitle-for="trajInf">Avg. VQA (%)</div>
     <div class="chart" data-chart="trajInf"></div>
-    <figcaption><b>In-fusion is comparable to the pre-fusion encoder over training.</b> It ranges from 2.0 Avg. VQA points behind the encoder to 1.8 ahead and stays within one Avg. Text point.</figcaption>
+    <figcaption>In-fusion ranges from 2.0 Avg. VQA points behind the encoder to 1.8 ahead and stays within one Avg. Text point.</figcaption>
   </figure>
 
 </section>
@@ -338,14 +351,18 @@
   <h2>The comparisons hold with scale</h2>
   <p>We also train the three recipes on a ladder of backbone sizes and token budgets, growing the vision module with the backbone, and fit one law per recipe in model size and training tokens. The figure shows the runs at 128 tokens per parameter.</p>
 
-  <figure class="wide">
+  <figure class="viz wide">
+    <div class="vh"><div>
+      <h4>Per-recipe scaling laws across backbone sizes</h4>
+      <p class="dek">Encoder-free's gap to the encoder grows with scale, while in-fusion is nearly indistinguishable from the encoder.</p>
+    </div></div>
     <div class="legend">
-      <span class="li"><span data-key="encoderFree"></span><span class="c-ef">Encoder-free</span></span>
-      <span class="li"><span data-key="scratch"></span><span class="c-enc">Scratch encoder</span></span>
-      <span class="li"><span data-key="infusion"></span><span class="c-inf">In-fusion</span></span>
+      <span class="li"><span data-key="encoderFree"></span>Encoder-free</span>
+      <span class="li"><span data-key="scratch"></span>Scratch encoder</span>
+      <span class="li"><span data-key="infusion"></span>In-fusion</span>
     </div>
     <div class="chart" data-chart="ladder"></div>
-    <figcaption><b>Encoder-free's gap to the encoder grows with scale, while in-fusion is nearly indistinguishable from the encoder.</b> Points are runs and curves are each recipe's fitted law; arrows give the factor of compute encoder-free needs to match the encoder.</figcaption>
+    <figcaption>Points are runs and curves are each recipe's fitted law; arrows give the factor of compute encoder-free needs to match the encoder.</figcaption>
   </figure>
 
   <p>With the encoder held at 0.4B instead, the factor stays near 2.6× at 1.7B and 4B. On text loss and Avg. Text, the three recipes are comparable.</p>
@@ -361,17 +378,25 @@
 
   <h3>Adding vision to a pretrained language model</h3>
   <p>We continue our own 1.7B text-only model from 1T to 1.33T token-equivalents, adding each recipe at equal compute, and include mixture-of-transformers (MoT) for comparison.</p>
-  <figure class="wide narrowish">
+  <figure class="viz wide narrowish">
+    <div class="vh"><div>
+      <h4>Mid-training from a pretrained 1.7B text model</h4>
+      <p class="dek">In mid-training, in-fusion, early-layer MoT, and the scratch encoder perform comparably, and all lead encoder-free.</p>
+    </div></div>
     <div class="chart" data-chart="mid"></div>
-    <figcaption><b>In mid-training, in-fusion, early-layer MoT, and the scratch encoder perform comparably, and all lead encoder-free.</b> Every recipe stays within a point of a text-only control on Avg. Text (57.3). MetaCLIP's pretraining is not counted.</figcaption>
+    <figcaption>Every recipe stays within a point of a text-only control on Avg. Text (57.3). MetaCLIP's pretraining is not counted.</figcaption>
   </figure>
   <p>The full MoT model falls behind despite having 3.5× as many vision-only parameters: what matters is reserving capacity for vision tokens early.</p>
 
   <h3>Time to first token</h3>
   <p>A separate encoder must finish each image before the backbone can start, which adds a serial step to inference.</p>
-  <figure class="wide narrowish">
+  <figure class="viz wide narrowish">
+    <div class="vh"><div>
+      <h4>Time to first token by recipe</h4>
+      <p class="dek">At the same vision-only budget, in-fusion adds the least time to first token.</p>
+    </div></div>
     <div class="chart" data-chart="ttft"></div>
-    <figcaption><b>At the same vision-only budget, in-fusion adds the least time to first token.</b> 1.7B backbone on one H200 with 16 concurrent requests, each with one 224-px image and 256 text tokens; percentages are relative to encoder-free.</figcaption>
+    <figcaption>1.7B backbone on one H200 with 16 concurrent requests, each with one 224-px image and 256 text tokens; percentages are relative to encoder-free.</figcaption>
   </figure>
   <p>The encoder-free model is fastest, but at 1.7B and 2.6×10<sup>21</sup> FLOPs it trails the encoder by 4.9 Avg. VQA points.</p>
 
@@ -406,5 +431,6 @@
 <script src="static/js/data.js"></script>
 <script src="static/js/viz.js"></script>
 <script src="static/js/main.js"></script>
+<script src="static/js/film.js"></script>
 </body>
 </html>

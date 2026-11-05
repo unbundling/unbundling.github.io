@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Page behavior: draws every figure from DATA, wires tooltips and toggles,
-   animates the teaser and the bundle diagram, and runs the contents list.
+   Page behavior: draws every figure from DATA, wires tooltips and toggles, animates the bundle diagram,
+   and runs the contents list and tab bar. The teaser film is film.js.
    ========================================================================== */
 (function () {
   "use strict";
@@ -66,6 +66,10 @@
       lastW = w;
       const out = draw(w);
       el.innerHTML = out.svg;
+      if (out.ytitle) {
+        const yt = document.querySelector(`[data-ytitle-for="${el.dataset.chart}"]`);
+        if (yt) yt.textContent = out.ytitle;
+      }
       if (out.kind === "line") attachLineHover(el, out);
       if (out.kind === "rows") attachRowHover(el, out);
     };
@@ -157,9 +161,9 @@
       points: s[m].map((v, i) => [i + 1, v]),
     }));
     series.push({ key: "scratch", name: "Scratch encoder", color: C.enc, marker: "circle", points: [[0, ref]], line: false, r: 5.4 });
-    return V.lineChart(w, {
+    return Object.assign(V.lineChart(w, {
       label: `Average ${m === "vqa" ? "VQA" : "text"} score versus the share of a fixed budget spent on encoder pretraining`,
-      minPanelW: 240, height: priorH(w), margin: { l: 50, r: 16, t: 16, b: 52 },
+      minPanelW: 240, height: priorH(w), margin: { l: 40, r: 16, t: 16, b: 52 },
       panels: [{
         x: { domain: [-0.35, 4.35], ticks: U.shares.map((s, i) => [i, s === 0 ? "0" : String(s)]), label: "Share of budget on encoder pretraining (%)" },
         y: { domain: yd, ticks: m === "vqa" ? [36, 38, 40, 42, 44] : [50, 52, 54, 56], label: metricLabel(m) },
@@ -167,7 +171,7 @@
         ann: [{ type: "hline", y: ref, color: C.enc, label: "scratch encoder", labelX: 4.3, labelDy: -6, labelColor: C.encDark }],
         xinfo: (i) => (i === 0 ? "No separate pretraining" : `${U.shares[i]}% of the ${U.budget.replace("^22", "²²")}-FLOP budget on pretraining`),
       }],
-    });
+    }), { ytitle: metricLabel(m) });
   };
 
   // Figure 7: longer (free) MetaCLIP pretraining raises ImageNet accuracy but not VQA.
@@ -179,7 +183,7 @@
     const showBars = w >= 400;
     const key = el.parentElement.querySelector(".legend");
     if (key) key.hidden = !showBars;
-    const labelW = 60, gap = 16;
+    const labelW = 60, gap = 20;
     const avail = w - labelW - 8;
     const barW = showBars ? Math.max(76, avail * 0.22) : 0;
     const panW = (avail - barW - (showBars ? 2 : 1) * gap) / 2;
@@ -243,9 +247,9 @@
     const dom = { "1.7B": [0.56, 15.4], "4B": [2.45, 34.2] };
     const yd = m === "vqa" ? { "1.7B": [28, 45], "4B": [35, 51] } : { "1.7B": [44, 57], "4B": [50, 62] };
     const yt = m === "vqa" ? { "1.7B": [30, 35, 40, 45], "4B": [35, 40, 45, 50] } : { "1.7B": [45, 50, 55], "4B": [50, 55, 60] };
-    return V.lineChart(w, {
+    return Object.assign(V.lineChart(w, {
       label: `${m === "vqa" ? "Average VQA" : "Average text"} score over lifetime compute`,
-      minPanelW: 250, height: Math.min(320, Math.max(256, w * 0.39)), margin: { l: 50, r: 16, t: 30, b: 52 },
+      minPanelW: 250, height: Math.min(320, Math.max(256, w * 0.39)), margin: { l: 40, r: 16, t: 30, b: 52 },
       panels: sizes.map((sz) => {
         const S = set[sz];
         const series = keys.map((k) => ({ key: k, name: RC[k].name, color: RC[k].color, dark: RC[k].dark, marker: RC[k].marker, points: S.x.map((x, i) => [x, S[k][m][i]]) }));
@@ -262,7 +266,7 @@
           xinfo: (x) => `${plainFlops(x * 1e21)} FLOPs · ${S.tpp[S.x.indexOf(x)]} tokens per parameter`,
         };
       }),
-    });
+    }), { ytitle: metricLabel(m) });
   }
   FIG.trajEF = (w) => trajectory(w, "fig-ef", D.trajectories.fig3, ["encoderFree", "scratch"], true);
   FIG.trajInf = (w) => trajectory(w, "fig-inf", D.trajectories.fig5, ["encoderFree", "scratch", "infusion"], false);
@@ -335,7 +339,7 @@
         xinfo: (x) => `${L.sizes[L.x.findIndex((v) => Math.abs(v / x - 1) < 0.01)] || ""} backbone · ${plainFlops(x)} FLOPs`,
       };
     };
-    const out = V.lineChart(w, { label: "Per-recipe scaling laws from 1B to 6.4B backbones", minPanelW: 320, height: Math.min(330, Math.max(260, w * 0.37)), margin: { l: 50, r: 14, t: 30, b: 52 }, panels: [mk("vqa"), mk("caption")] });
+    const out = V.lineChart(w, { label: "Per-recipe scaling laws from 1B to 6.4B backbones", minPanelW: 320, height: Math.min(330, Math.max(260, w * 0.37)), margin: { l: 40, r: 14, t: 30, b: 52 }, panels: [mk("vqa"), mk("caption")] });
     out.meta[1].ascending = true;
     return out;
   };
@@ -382,24 +386,6 @@
     el.innerHTML = V.legendLine(k, { noLine: el.hasAttribute("data-noline") });
   });
   document.querySelectorAll("[data-strip]").forEach((el) => { el.innerHTML = V.layerStrip(el.dataset.strip); });
-
-  // ------------------------------------------------------------ teaser
-  const teaser = document.querySelector(".teaser");
-  if (teaser) {
-    const panels = [...teaser.querySelectorAll(".q")];
-    const play = () => {
-      panels.forEach((p) => p.classList.remove("answered"));
-      if (reduceMotion) { panels.forEach((p) => p.classList.add("answered")); return; }
-      panels.forEach((p, i) => setTimeout(() => p.classList.add("answered"), 450 + i * 650));
-    };
-    if (STATIC) play();
-    else if ("IntersectionObserver" in window) {
-      const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { play(); io.disconnect(); } }), { threshold: 0.4 });
-      io.observe(teaser);
-    } else play();
-    const rp = teaser.querySelector(".replay");
-    if (rp) rp.addEventListener("click", play);
-  }
 
   // ------------------------------------------------------------ bundle diagram
   /* One glyph that morphs between the four recipes: pills (dedicated capacity) change color when the prior is dropped,
@@ -525,20 +511,43 @@
     }
   }
 
-  // ------------------------------------------------------------ contents list
-  const toc = document.querySelector(".toc");
-  if (toc) {
-    const links = [...toc.querySelectorAll("a")];
-    const secs = links.map((a) => document.querySelector(a.getAttribute("href"))).filter(Boolean);
+  // ------------------------------------------------------------ contents: side list and tab bar
+  /* Each list marks the last of its own entries the reader has passed, so the tab bar, which lists only top-level
+     sections, keeps §5 marked while the side list marks §5.4. */
+  const navs = [...document.querySelectorAll(".toc, .tabs")].map((n) => {
+    const links = [...n.querySelectorAll("a")];
+    return { n, links, secs: links.map((a) => document.querySelector(a.getAttribute("href"))), cur: -1 };
+  });
+  if (navs.length) {
     const onScroll = () => {
       const y = window.scrollY + window.innerHeight * 0.3;
-      let cur = 0;
-      secs.forEach((s, i) => { if (s.offsetTop <= y) cur = i; });
-      links.forEach((a, i) => a.classList.toggle("on", i === cur));
+      navs.forEach((v) => {
+        let c = 0;
+        v.secs.forEach((s, i) => { if (s && s.offsetTop <= y) c = i; });
+        if (c === v.cur) return;
+        v.cur = c;
+        v.links.forEach((a, i) => a.classList.toggle("on", i === c));
+        // keep the marked tab in view when the tab bar scrolls sideways
+        const a = v.links[c];
+        if (v.n.classList.contains("tabs") && v.n.offsetParent) {
+          const ol = a.closest("ol"), r = a.getBoundingClientRect(), rr = ol.getBoundingClientRect();
+          if (r.left < rr.left || r.right > rr.right - 40) ol.scrollBy({ left: r.left - rr.left - 8, behavior: reduceMotion ? "auto" : "smooth" });
+        }
+      });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
   }
+
+  // ------------------------------------------------------------ heading anchors (a ¶ link shows on hover)
+  document.querySelectorAll("section[id] > h2").forEach((h) => {
+    const a = document.createElement("a");
+    a.className = "hanchor";
+    a.href = "#" + h.parentElement.id;
+    a.textContent = "¶";
+    a.setAttribute("aria-label", "Link to this section");
+    h.appendChild(a);
+  });
 
   // ------------------------------------------------------------ BibTeX copy
   document.querySelectorAll("[data-copy]").forEach((btn) => {

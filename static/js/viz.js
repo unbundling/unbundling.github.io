@@ -227,7 +227,7 @@
     const pw = (width - (cols - 1) * gap) / cols;
     const ph = spec.height || Math.max(210, Math.min(300, pw * 0.78));
     const fs = width < 420 ? 13 : 15;
-    const M = Object.assign({ l: 50, r: 14, t: 30, b: 50 }, spec.margin || {});
+    const M = Object.assign({ l: 40, r: 14, t: 30, b: 50 }, spec.margin || {});
     const rowGap = 18;
     const H = rows * ph + (rows - 1) * rowGap;
     const defs = [], meta = [];
@@ -252,8 +252,8 @@
         p += T(x, Y0 + fs + 5, lab, { size: fs - 1, anchor: "middle", color: C.muted });
       });
       p += `<line x1="${r1(X0)}" x2="${r1(X1)}" y1="${r1(Y0)}" y2="${r1(Y0)}" stroke="${C.axis}" stroke-width="1"/>`;
+      // the y-axis title sits above the chart as text (.ytitle), so it is not drawn rotated here
       if (P.x.label) p += T((X0 + X1) / 2, Y0 + fs * 2 + 14, P.x.label, { size: fs, anchor: "middle", color: C.ink });
-      if (P.y.label && (i % cols === 0 || P.y.always)) p += T(cx + 12, (Y0 + Y1) / 2, P.y.label, { size: fs, anchor: "middle", rotate: -90, color: C.ink });
       if (P.title) p += `<text x="${r1(X0)}" y="${r1(cy + 16)}" font-size="${fs + 2}" font-weight="700" fill="${C.ink}">${rich(P.title, fs + 2)}` +
         (P.subtitle ? `<tspan dx="7" font-weight="400" font-size="${fs - 1}" fill="${C.faint}">${esc(P.subtitle)}</tspan>` : "") + `</text>`;
       // reference lines + bands
@@ -495,5 +495,5 @@
     return svgWrap(W, H, g, { fluid: true, label: "Mixture-of-transformers block: separate text and vision streams that interact only through joint attention", cls: "schematic" });
   }
 
-  window.Viz = { f1, C, RECIPE, T, rich, esc, scale, marker, glyph, layerStrip, legendLine, lineChart, dotPlot, stackedBars, infusionBlock, motBlock, flops, svgWrap, arrowDef, nextId, r1 };
+  window.Viz = { f1, C, RECIPE, T, rich, esc, scale, marker, glyph, layerStrip, legendLine, lineChart, dotPlot, stackedBars, infusionBlock, motBlock, flops, svgWrap, arrowDef, nextId, r1, placeArrowLabel };
 })();

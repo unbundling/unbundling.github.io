@@ -14,6 +14,7 @@ python3 -m http.server 8971 --bind 127.0.0.1
 
 - Add `?static` to the URL to show every animated element in its final state. Use it for screenshots and print.
 - Add `?static&bundle=infusion` (or `pretrained`, `scratch`, `free`) to pin the recipe diagram to one recipe.
+- Add `?film=prior@8` (any chapter key in `film.js`, then seconds) to open the teaser film paused on one frame.
 
 ## Layout
 
@@ -22,17 +23,13 @@ python3 -m http.server 8971 --bind 127.0.0.1
 | Text, section order, captions, links | `index.html` |
 | Every plotted number (each block names its paper figure or table) | `static/js/data.js` |
 | Glyphs, schematics and chart drawing | `static/js/viz.js` |
-| Figure assembly, tooltips, toggles, animations, contents list | `static/js/main.js` |
+| Figure assembly, tooltips, toggles, the recipe diagram, contents list and tab bar | `static/js/main.js` |
+| Teaser film: one animated chapter per section, every frame drawn from `data.js` (each chapter's timing is its `T` table; each layout table holds a wide variant and a tall one for phones) | `static/js/film.js` |
 | Colors, type and layout (`:root` holds the paper palette) | `static/css/style.css` |
 | Logos, favicon, social card | `static/img/` |
-| TeX Gyre Pagella (Palatino clone, GUST Font License) and Hanken Grotesk (SIL Open Font License, used by `v2/`) | `static/fonts/` |
-| Design draft to compare against the main page (its own HTML, CSS and JS copies; shares `static/js/data.js`, fonts and images) | `v2/` |
+| TeX Gyre Pagella (Palatino clone, GUST Font License) | `static/fonts/` |
 
 Charts are drawn as SVG for the width of their container and redrawn on resize, so they stay sharp on every screen. Palatino is used where it is installed; elsewhere the page falls back to the bundled Pagella.
-
-## v2 design draft
-
-`v2/` (live at <https://unbundling.github.io/v2/>, marked `noindex`) tries a different presentation: one sans family for text and charts, a left-aligned header with a one-sentence lede, figures framed as title, finding, legend, chart and caption, a chaptered teaser, and a contents tab bar on narrow screens. Fold whatever we keep into the main page, then delete `v2/`.
 
 ## Social card
 
