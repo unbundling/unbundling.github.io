@@ -401,7 +401,7 @@
     const ICON = {
       pause: '<svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.2" y="1.5" width="2.6" height="9" rx=".6" fill="currentColor"/><rect x="7.2" y="1.5" width="2.6" height="9" rx=".6" fill="currentColor"/></svg>',
       play: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3.2 1.6v8.8l7-4.4z" fill="currentColor"/></svg>',
-      replay: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.7 6.3A3.7 3.7 0 1 1 8.4 3.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8.3 1.2v2.6h2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      replay: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>',
     };
     const LABEL = { pause: "Pause", play: "Play", replay: "Replay" };
     let k = 0, t = 0, last = null, running = false, raf = 0;

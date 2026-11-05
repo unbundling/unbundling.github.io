@@ -32,7 +32,7 @@ Charts are drawn as SVG for the width of their container and redrawn on resize, 
 
 ## v2 design draft
 
-`v2/` (live at <https://unbundling.github.io/v2/>, marked `noindex`) tries a different presentation: one sans family for text and charts, a left-aligned header with a one-sentence lede, figures framed as title, finding, legend, chart, credit and caption, a chaptered teaser, and a contents tab bar on narrow screens. Fold whatever we keep into the main page, then delete `v2/`.
+`v2/` (live at <https://unbundling.github.io/v2/>, marked `noindex`) tries a different presentation: one sans family for text and charts, a left-aligned header with a one-sentence lede, figures framed as title, finding, legend, chart and caption, a chaptered teaser, and a contents tab bar on narrow screens. Fold whatever we keep into the main page, then delete `v2/`.
 
 ## Social card
 

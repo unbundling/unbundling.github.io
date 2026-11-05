@@ -26,12 +26,12 @@
   <p class="toc-label">Contents</p>
   <ol>
     <li><a href="#top">Overview</a></li>
-    <li><a href="#setup">Three choices, bundled</a></li>
-    <li><a href="#prior">Separate pretraining is optional</a></li>
-    <li><a href="#capacity">Dedicated vision capacity is key</a></li>
-    <li><a href="#placement">Vision capacity can be in-fusion</a></li>
-    <li><a href="#scale">The comparisons hold from 1B to 6.4B</a></li>
-    <li><a href="#practical">Dedicated capacity still matters in practice</a></li>
+    <li><a href="#setup"><span class="sec">§2</span>Three choices</a></li>
+    <li><a href="#prior"><span class="sec">§3</span>Visual prior</a></li>
+    <li><a href="#capacity"><span class="sec">§4</span>Dedicated capacity</a></li>
+    <li><a href="#placement"><span class="sec">§5</span>Placement</a></li>
+    <li><a href="#scale"><span class="sec">§5.4</span>Scale</a></li>
+    <li><a href="#practical"><span class="sec">§6</span>In practice</a></li>
     <li><a href="#citation">Citation</a></li>
   </ol>
 </nav>
@@ -89,12 +89,12 @@
 <nav class="tabs" aria-label="Sections">
   <ol>
     <li><a href="#top">Overview</a></li>
-    <li><a href="#setup">Setup</a></li>
-    <li><a href="#prior">Visual prior</a></li>
-    <li><a href="#capacity">Dedicated capacity</a></li>
-    <li><a href="#placement">Placement</a></li>
-    <li><a href="#scale">Scale</a></li>
-    <li><a href="#practical">In practice</a></li>
+    <li><a href="#setup"><span class="sec">§2</span>Three choices</a></li>
+    <li><a href="#prior"><span class="sec">§3</span>Visual prior</a></li>
+    <li><a href="#capacity"><span class="sec">§4</span>Dedicated capacity</a></li>
+    <li><a href="#placement"><span class="sec">§5</span>Placement</a></li>
+    <li><a href="#scale"><span class="sec">§5.4</span>Scale</a></li>
+    <li><a href="#practical"><span class="sec">§6</span>In practice</a></li>
     <li><a href="#citation">Citation</a></li>
   </ol>
 </nav>
@@ -180,7 +180,6 @@
         </tbody>
       </table>
     </div>
-    <div class="credit"><img src="../static/img/favicon.svg" alt="">unbundling.github.io</div>
     <figcaption>Hover a recipe to see which. In-fusion keeps dedicated vision capacity without the prior or pre-fusion placement.</figcaption>
   </figure>
 
@@ -261,7 +260,6 @@
         <div class="chart" data-chart="free"></div>
       </div>
     </div>
-    <div class="credit"><img src="../static/img/favicon.svg" alt="">unbundling.github.io</div>
     <figcaption>Left: a 1.7B backbone with a fixed 1.04×10<sup>22</sup>-FLOP budget. Right: MetaCLIP pretraining that is not charged to the budget, followed by the same multimodal stage.</figcaption>
   </figure>
 
@@ -291,7 +289,6 @@
     </div>
     <div class="ytitle" data-ytitle-for="trajEF">Avg. VQA (%)</div>
     <div class="chart" data-chart="trajEF"></div>
-    <div class="credit"><img src="../static/img/favicon.svg" alt="">unbundling.github.io</div>
     <figcaption>Each point is a learning-rate-decayed run; arrows mark how much more compute encoder-free needs to match the encoder's Avg. VQA.</figcaption>
   </figure>
 
@@ -303,7 +300,6 @@
       <p class="dek">Matching total parameters doesn't close the gap.</p>
     </div></div>
     <div class="chart" data-chart="steelman"></div>
-    <div class="credit"><img src="../static/img/favicon.svg" alt="">unbundling.github.io</div>
     <figcaption>The added parameters help Avg. Text, since text tokens use them too, but move Avg. VQA by at most 1.0 point.</figcaption>
   </figure>
 
@@ -333,7 +329,6 @@
       <span class="li"><span class="sw sw-text"></span>text tokens only</span>
       <span class="li"><span class="sw sw-vis"></span>vision tokens only</span>
     </div>
-    <div class="credit"><img src="../static/img/favicon.svg" alt="">unbundling.github.io</div>
     <figcaption>Every token passes through the shared modules; vision tokens also pass through vision-only attention projections and an FFN branch whose outputs add to the shared ones, so attention stays joint and text-only inputs are processed exactly as by the shared backbone alone. In-fusion (FFN-only) omits the dashed modules. MoT instead gives each modality its own modules, so the streams meet only in attention.</figcaption>
   </figure>
 
@@ -345,7 +340,6 @@
       <p class="dek">Added capacity helps most when reserved for vision tokens and placed early.</p>
     </div></div>
     <div class="chart" data-chart="capDesign"></div>
-    <div class="credit"><img src="../static/img/favicon.svg" alt="">unbundling.github.io</div>
     <figcaption>Every row adds 0.4B parameters to the 1.7B encoder-free backbone (2.6×10<sup>21</sup> FLOPs, 158 tokens per parameter); the vision-only FFN branch in the first eight layers is in-fusion (FFN-only). Strips show the 28 layers: gray is used by all tokens, blue by vision tokens only, and taller is wider.</figcaption>
   </figure>
 
@@ -366,7 +360,6 @@
     </div>
     <div class="ytitle" data-ytitle-for="trajInf">Avg. VQA (%)</div>
     <div class="chart" data-chart="trajInf"></div>
-    <div class="credit"><img src="../static/img/favicon.svg" alt="">unbundling.github.io</div>
     <figcaption>In-fusion ranges from 2.0 Avg. VQA points behind the encoder to 1.8 ahead and stays within one Avg. Text point.</figcaption>
   </figure>
 
@@ -389,7 +382,6 @@
       <span class="li"><span data-key="infusion"></span>In-fusion</span>
     </div>
     <div class="chart" data-chart="ladder"></div>
-    <div class="credit"><img src="../static/img/favicon.svg" alt="">unbundling.github.io</div>
     <figcaption>Points are runs and curves are each recipe's fitted law; arrows give the factor of compute encoder-free needs to match the encoder.</figcaption>
   </figure>
 
@@ -412,7 +404,6 @@
       <p class="dek">In mid-training, in-fusion, early-layer MoT, and the scratch encoder perform comparably, and all lead encoder-free.</p>
     </div></div>
     <div class="chart" data-chart="mid"></div>
-    <div class="credit"><img src="../static/img/favicon.svg" alt="">unbundling.github.io</div>
     <figcaption>Every recipe stays within a point of a text-only control on Avg. Text (57.3). MetaCLIP's pretraining is not counted.</figcaption>
   </figure>
   <p>The full MoT model falls behind despite having 3.5× as many vision-only parameters: what matters is reserving capacity for vision tokens early.</p>
@@ -425,7 +416,6 @@
       <p class="dek">At the same vision-only budget, in-fusion adds the least time to first token.</p>
     </div></div>
     <div class="chart" data-chart="ttft"></div>
-    <div class="credit"><img src="../static/img/favicon.svg" alt="">unbundling.github.io</div>
     <figcaption>1.7B backbone on one H200 with 16 concurrent requests, each with one 224-px image and 256 text tokens; percentages are relative to encoder-free.</figcaption>
   </figure>
   <p>The encoder-free model is fastest, but at 1.7B and 2.6×10<sup>21</sup> FLOPs it trails the encoder by 4.9 Avg. VQA points.</p>
@@ -454,13 +444,8 @@
 </main>
 
 <footer class="foot">
-  <div class="foot-in">
-    <div>
-      <p class="foot-t">Unbundling Multimodal Vision Encoding</p>
-      <p class="foot-s">Meta FAIR · New York University</p>
-    </div>
-    <a href="#top">Back to top ↑</a>
-  </div>
+  <span>Unbundling Multimodal Vision Encoding</span>
+  <a href="#top">Back to top ↑</a>
 </footer>
 
 <script src="../static/js/data.js"></script>
