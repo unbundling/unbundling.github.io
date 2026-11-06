@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SVG drawing: recipe glyphs, schematics, and charts.
+   SVG drawing: recipe glyphs, schematics, and charts, plus the trigger that starts animated figures.
    Charts are drawn for the width of their container and redrawn when it changes.
    Colors and markers follow the paper (one color + marker per recipe).
    ========================================================================== */
@@ -218,6 +218,9 @@
                   ann: [{type:"arrow", from:[x,y], to:[x,y], label, labelDy}, {type:"hline", y, color, label}, {type:"text", x, y, text}],
                   xinfo: (x) => string }],
        minPanelW, height, gap } */
+  // adds attributes to the first element of an SVG snippet (figure builds find marks by data-b; pixels don't change)
+  const tag = (svg, attrs) => svg.replace(/^<([a-z]+)/, `<$1 ${attrs}`);
+
   function lineChart(width, spec) {
     const n = spec.panels.length;
     const gap = spec.gap == null ? 26 : spec.gap;
@@ -259,8 +262,8 @@
       // reference lines + bands
       (P.ann || []).filter((a) => a.type === "hline").forEach((a) => {
         const y = sy(a.y);
-        p += `<line x1="${r1(X0)}" x2="${r1(X1)}" y1="${r1(y)}" y2="${r1(y)}" stroke="${a.color || C.faint}" stroke-width="1.6" stroke-dasharray="6 5"/>`;
-        if (a.label) p += T(a.labelX != null ? sx(a.labelX) : X1 - 2, y + (a.labelDy || -6), a.label, { size: fs - 1, color: a.labelColor || a.color || C.muted, anchor: a.anchor || "end", halo: true });
+        p += `<line data-b="ref" x1="${r1(X0)}" x2="${r1(X1)}" y1="${r1(y)}" y2="${r1(y)}" stroke="${a.color || C.faint}" stroke-width="1.6" stroke-dasharray="6 5"/>`;
+        if (a.label) p += tag(T(a.labelX != null ? sx(a.labelX) : X1 - 2, y + (a.labelDy || -6), a.label, { size: fs - 1, color: a.labelColor || a.color || C.muted, anchor: a.anchor || "end", halo: true }), 'data-b="ref"');
       });
       // series
       const smeta = [], polys = [];
@@ -269,12 +272,12 @@
         if (pts.length > 1 && s.line !== false) polys.push(pts.map((q) => [q[0], q[1]]));
         if (!s.noMarkers) pts.forEach((q) => polys.push([[q[0] - 5, q[1] - 5], [q[0] + 5, q[1] - 5], [q[0] + 5, q[1] + 5], [q[0] - 5, q[1] + 5], [q[0] - 5, q[1] - 5]]));
         if (pts.length > 1 && s.line !== false) {
-          p += `<path d="${pts.map((q, k) => (k ? "L" : "M") + r1(q[0]) + "," + r1(q[1])).join("")}" fill="none" stroke="${s.color}" stroke-width="${s.lw || 2.2}" stroke-linejoin="round" stroke-linecap="round"${s.dash ? ` stroke-dasharray="${s.dash}"` : ""}${s.opacity ? ` opacity="${s.opacity}"` : ""}/>`;
+          p += `<path data-b="line" data-s="${s.key}" d="${pts.map((q, k) => (k ? "L" : "M") + r1(q[0]) + "," + r1(q[1])).join("")}" fill="none" stroke="${s.color}" stroke-width="${s.lw || 2.2}" stroke-linejoin="round" stroke-linecap="round"${s.dash ? ` stroke-dasharray="${s.dash}"` : ""}${s.opacity ? ` opacity="${s.opacity}"` : ""}/>`;
         }
-        if (!s.noMarkers) pts.forEach((q) => (p += marker(s.marker, q[0], q[1], s.r || 4.6, s.color)));
+        if (!s.noMarkers) pts.forEach((q) => (p += tag(marker(s.marker, q[0], q[1], s.r || 4.6, s.color), `data-b="pt" data-s="${s.key}" data-x="${q[2]}"`)));
         if (s.labelEnd && pts.length) {
           const q = pts[pts.length - 1], L = s.labelEnd;
-          p += T(q[0] + (L.dx || 8), q[1] + (L.dy || 4), L.text || s.name, { size: fs, color: s.dark || s.color, weight: 700, anchor: L.anchor, halo: true });
+          p += tag(T(q[0] + (L.dx || 8), q[1] + (L.dy || 4), L.text || s.name, { size: fs, color: s.dark || s.color, weight: 700, anchor: L.anchor, halo: true }), `data-b="end" data-s="${s.key}"`);
         }
         if (!s.noHover) smeta.push({ key: s.key, name: s.name, color: s.color, marker: s.marker, dash: s.dash, pts });
       });
@@ -284,15 +287,15 @@
           const id = nextId("ah");
           defs.push(arrowDef(id, a.color || C.ink));
           const x1 = sx(a.from[0]), y1 = sy(a.from[1]), x2 = sx(a.to[0]), y2 = sy(a.to[1]);
-          p += `<line x1="${r1(x1)}" y1="${r1(y1)}" x2="${r1(x2)}" y2="${r1(y2)}" stroke="${a.color || C.ink}" stroke-width="1.5" marker-end="url(#${id})"/>`;
+          p += `<line data-b="arrow" x1="${r1(x1)}" y1="${r1(y1)}" x2="${r1(x2)}" y2="${r1(y2)}" stroke="${a.color || C.ink}" stroke-width="1.5" marker-end="url(#${id})"/>`;
           if (a.label) {
             const L = placeArrowLabel(x1, y1, x2, y2, a.label, fs, polys, a.prefer);
-            p += T(L.x, L.y, a.label, { size: fs, weight: 700, anchor: "middle", color: a.labelColor || C.ink, halo: true });
+            p += tag(T(L.x, L.y, a.label, { size: fs, weight: 700, anchor: "middle", color: a.labelColor || C.ink, halo: true }), 'data-b="arrow"');
           }
         } else if (a.type === "text") {
           const x = a.px ? cx + a.x * pw : sx(a.x), y = a.py ? cy + a.y * ph : sy(a.y);
           (Array.isArray(a.text) ? a.text : [a.text]).forEach((line, k) => {
-            p += T(x, y + k * (fs + 3), line, { size: a.size || fs - 0.5, color: a.color || C.muted, anchor: a.anchor, italic: a.italic, weight: a.weight, halo: true });
+            p += tag(T(x, y + k * (fs + 3), line, { size: a.size || fs - 0.5, color: a.color || C.muted, anchor: a.anchor, italic: a.italic, weight: a.weight, halo: true }), 'data-b="note"');
           });
         } else if (a.type === "floor") {
           // a horizontal segment drawn at the bottom of the plot (e.g., encoder pretraining spent before training starts)
@@ -333,24 +336,24 @@
         y += grp.sub ? fs * 2 + 12 : fs + 9;
       }
       grp.rows.forEach((row) => {
-        const cy = stacked ? y + rowH - 14 : y + rowH / 2;
+        const cy = stacked ? y + rowH - 14 : y + rowH / 2, rb = `data-r="${tips.length}"`;
         g += `<line x1="${r1(X0)}" x2="${r1(X1)}" y1="${r1(cy)}" y2="${r1(cy)}" stroke="${C.grid}" stroke-width="1"/>`;
         if (stacked) {
           g += T(0, y + fs + 2, row.label, { size: fs, color: row.labelColor || C.ink, weight: row.strong ? 700 : undefined });
-          if (row.icon) g += `<g transform="translate(${r1(width - 150)},${r1(y + 2)})">${row.icon}</g>`;
-          else if (spec.side && row.side != null) g += T(width, y + fs + 2, `${spec.side.short || "Text"} ${row.side}`, { size: fs - 1.5, anchor: "end", color: C.muted, cls: "tnum" });
+          if (row.icon) g += `<g data-b="strip" ${rb} transform="translate(${r1(width - 150)},${r1(y + 2)})">${row.icon}</g>`;
+          else if (spec.side && row.side != null) g += tag(T(width, y + fs + 2, `${spec.side.short || "Text"} ${row.side}`, { size: fs - 1.5, anchor: "end", color: C.muted, cls: "tnum" }), `data-b="val" ${rb}`);
         } else {
           g += T(labelW - 6, cy + fs * .34, row.label, { size: fs, anchor: "end", color: row.labelColor || C.ink, weight: row.strong ? 700 : undefined });
         }
-        if (row.icon && iconW) g += `<g transform="translate(${r1(labelW + 4)},${r1(cy - 10)})">${row.icon}</g>`;
+        if (row.icon && iconW) g += `<g data-b="strip" ${rb} transform="translate(${r1(labelW + 4)},${r1(cy - 10)})">${row.icon}</g>`;
         const x = sx(row.value);
         if (row.from != null) {
           const xf = sx(row.from);
           g += `<line x1="${r1(xf)}" x2="${r1(x)}" y1="${r1(cy)}" y2="${r1(cy)}" stroke="${row.color}" stroke-width="2.4" opacity=".35"/>`;
         }
-        g += marker(row.marker || "circle", x, cy, row.r || 6, row.color, { sw: 2 });
-        g += T(x + (row.r || 6) + 6, cy + fs * .34, row.valueText || f1(row.value), { size: fs, weight: 700, color: C.ink, halo: true, cls: "tnum" });
-        if (spec.side && row.side != null && !stacked) g += T(width - sideW / 2, cy + fs * .34, row.side, { size: fs - 1, anchor: "middle", color: C.muted, cls: "tnum" });
+        g += tag(marker(row.marker || "circle", x, cy, row.r || 6, row.color, { sw: 2 }), `data-b="pt" ${rb}`);
+        g += tag(T(x + (row.r || 6) + 6, cy + fs * .34, row.valueText || f1(row.value), { size: fs, weight: 700, color: C.ink, halo: true, cls: "tnum" }), `data-b="val" ${rb}`);
+        if (spec.side && row.side != null && !stacked) g += tag(T(width - sideW / 2, cy + fs * .34, row.side, { size: fs - 1, anchor: "middle", color: C.muted, cls: "tnum" }), `data-b="val" ${rb}`);
         tips.push(row.tip || null);
         hits.push(`<rect class="hit-row" data-i="${tips.length - 1}" x="0" y="${r1(y)}" width="${r1(width)}" height="${rowH}" fill="transparent"/>`);
         y += rowH;
@@ -367,8 +370,8 @@
     if (spec.side && !stacked) axis += T(width - sideW / 2, top - 8, spec.side.header, { size: fs - 1.5, anchor: "middle", color: C.faint });
     (spec.refs || []).forEach((rf) => {
       const x = sx(rf.value);
-      axis += `<line x1="${r1(x)}" x2="${r1(x)}" y1="${top - 6}" y2="${r1(bottom)}" stroke="${rf.color}" stroke-width="1.6" stroke-dasharray="5 4"/>`;
-      if (rf.label) axis += T(x + (rf.dx || 0), top - 10, rf.label, { size: fs - 1.5, anchor: rf.anchor || "middle", color: rf.labelColor || rf.color, halo: true });
+      axis += `<line data-b="ref"${rf.key ? ` data-s="${rf.key}"` : ""} x1="${r1(x)}" x2="${r1(x)}" y1="${top - 6}" y2="${r1(bottom)}" stroke="${rf.color}" stroke-width="1.6" stroke-dasharray="5 4"/>`;
+      if (rf.label) axis += tag(T(x + (rf.dx || 0), top - 10, rf.label, { size: fs - 1.5, anchor: rf.anchor || "middle", color: rf.labelColor || rf.color, halo: true }), 'data-b="ref"');
     });
     const H = bottom + (spec.x.label ? fs * 2 + 20 : fs + 14);
     return { svg: svgWrap(width, H, axis + g + hits.join(""), { label: spec.label }), tips, kind: "rows" };
@@ -396,19 +399,19 @@
         y += fs + 6;
       }
       grp.rows.forEach((row) => {
-        const cy = stacked ? y + rowH - 11 : y + rowH / 2;
+        const cy = stacked ? y + rowH - 11 : y + rowH / 2, rb = `data-r="${tips.length}"`;
         const rc = RECIPE[row.key];
         g += stacked ? T(0, y + fs + 1, row.label, { size: fs, color: C.ink }) : T(labelW, cy + fs * .34, row.label, { size: fs, anchor: "end", color: C.ink });
-        g += `<rect x="${r1(X0)}" y="${r1(cy - barH / 2)}" width="${r1(bx - X0)}" height="${barH}" fill="#dfe2e6"/>`;
+        g += `<rect data-b="bar" ${rb} x="${r1(X0)}" y="${r1(cy - barH / 2)}" width="${r1(bx - X0)}" height="${barH}" fill="#dfe2e6"/>`;
         if (row.added > 0) {
           const x1 = sx(spec.prefill + row.added);
-          g += `<path d="M${r1(bx + 1.5)},${r1(cy - barH / 2)} H${r1(x1 - 4)} a4,4 0 0 1 4,4 V${r1(cy + barH / 2 - 4)} a4,4 0 0 1 -4,4 H${r1(bx + 1.5)} Z" fill="${rc.hatch ? `url(#${hatchId})` : rc.color}"/>`;
+          g += `<path data-b="add" ${rb} data-v="${row.added}" d="M${r1(bx + 1.5)},${r1(cy - barH / 2)} H${r1(x1 - 4)} a4,4 0 0 1 4,4 V${r1(cy + barH / 2 - 4)} a4,4 0 0 1 -4,4 H${r1(bx + 1.5)} Z" fill="${rc.hatch ? `url(#${hatchId})` : rc.color}"/>`;
         } else {
-          g += `<rect x="${r1(bx - 2.5)}" y="${r1(cy - barH / 2)}" width="2.5" height="${barH}" fill="${rc.color}"/>`;
+          g += `<rect data-b="add" ${rb} data-v="0" x="${r1(bx - 2.5)}" y="${r1(cy - barH / 2)}" width="2.5" height="${barH}" fill="${rc.color}"/>`;
         }
         const xe = sx(spec.prefill + row.added);
-        g += T(xe + 7, cy + fs * .34, row.total, { size: fs, weight: 700, color: C.ink, cls: "tnum" }) +
-          (row.pct ? T(xe + 7 + (row.total.length * fs * 0.52) + 4, cy + fs * .34, row.pct, { size: fs - 1, color: C.muted, cls: "tnum" }) : "");
+        g += tag(T(xe + 7, cy + fs * .34, row.total, { size: fs, weight: 700, color: C.ink, cls: "tnum" }), `data-b="val" ${rb}`) +
+          (row.pct ? tag(T(xe + 7 + (row.total.length * fs * 0.52) + 4, cy + fs * .34, row.pct, { size: fs - 1, color: C.muted, cls: "tnum" }), `data-b="val" ${rb}`) : "");
         tips.push({ title: row.label, rows: [{ value: row.total, name: "time to first token" }, ...(row.added ? [{ value: `+${f1(row.added)} ms`, name: "over the backbone prefill" }] : [])] });
         hits.push(`<rect class="hit-row" data-i="${tips.length - 1}" x="0" y="${r1(y)}" width="${r1(width)}" height="${rowH}" fill="transparent"/>`);
         y += rowH;
@@ -425,9 +428,9 @@
     axis += T(stacked ? width / 2 : (X0 + X1) / 2, bottom + fs * 2 + 12, spec.xlabel, { size: fs, anchor: "middle" });
     // prefill bracket at top
     const id = nextId("ah");
-    axis += `<defs>${arrowDef(id, C.muted)}</defs><line x1="${r1(X0)}" x2="${r1(bx)}" y1="22" y2="22" stroke="${C.muted}" stroke-width="1.2" marker-end="url(#${id})" marker-start="url(#${id})"/>`;
+    axis += `<defs>${arrowDef(id, C.muted)}</defs><line data-b="ref" x1="${r1(X0)}" x2="${r1(bx)}" y1="22" y2="22" stroke="${C.muted}" stroke-width="1.2" marker-end="url(#${id})" marker-start="url(#${id})"/>`;
     const pl = `backbone prefill (${Math.round(spec.prefill)} ms)`, fits = pl.length * (fs - 1.5) * 0.5 < bx - X0;
-    axis += T(fits ? (X0 + bx) / 2 : X0, 15, pl, { size: fs - 1.5, anchor: fits ? "middle" : "start", color: C.muted });
+    axis += tag(T(fits ? (X0 + bx) / 2 : X0, 15, pl, { size: fs - 1.5, anchor: fits ? "middle" : "start", color: C.muted }), 'data-b="ref"');
     const H = bottom + fs * 2 + 20;
     return { svg: svgWrap(width, H, axis + g + hits.join(""), { label: spec.label }), tips, kind: "rows" };
   }
@@ -495,5 +498,34 @@
     return svgWrap(W, H, g, { fluid: true, label: "Mixture-of-transformers block: separate text and vision streams that interact only through joint attention", cls: "schematic" });
   }
 
-  window.Viz = { f1, C, RECIPE, T, rich, esc, scale, marker, glyph, layerStrip, legendLine, lineChart, dotPlot, stackedBars, infusionBlock, motBlock, flops, svgWrap, arrowDef, nextId, r1, placeArrowLabel };
+  // ------------------------------------------------------- animation start
+  /* Animated figures start once the reader is looking at them: when the figure's middle reaches the middle of the
+     screen (for a figure taller than the screen, its top reaches the top) and stays in the upper half for a moment, so
+     a jump or a fast scroll past it doesn't use it up. At the bottom of the page, being on screen is enough. fn runs once. */
+  const waiting = [];
+  let queued = false, recheck = 0;
+  function checkWaiting() {
+    queued = false;
+    clearTimeout(recheck);
+    const vh = window.innerHeight, now = performance.now();
+    const atEnd = window.scrollY + vh >= document.documentElement.scrollHeight - 2;
+    let wait = 0;
+    waiting.slice().forEach((w) => {
+      const r = w.el.getBoundingClientRect(), mid = r.top + Math.min(r.height, vh) / 2;
+      if (!(r.height > 0 && r.top < vh && r.bottom > 0 && (atEnd || (mid >= 0 && mid <= vh / 2)))) { w.since = 0; return; }
+      if (!w.since) w.since = now;
+      if (now - w.since >= 150) { waiting.splice(waiting.indexOf(w), 1); w.fn(); }
+      else wait = Math.max(wait, 150 - (now - w.since));
+    });
+    if (wait) recheck = setTimeout(checkWaiting, wait + 5);
+    if (!waiting.length) { window.removeEventListener("scroll", queueCheck); window.removeEventListener("resize", queueCheck); }
+  }
+  function queueCheck() { if (!queued) { queued = true; requestAnimationFrame(checkWaiting); } }
+  function whenCentered(el, fn) {
+    if (!waiting.length) { window.addEventListener("scroll", queueCheck, { passive: true }); window.addEventListener("resize", queueCheck); }
+    waiting.push({ el, fn, since: 0 });
+    queueCheck();
+  }
+
+  window.Viz = { f1, C, RECIPE, T, rich, esc, scale, marker, glyph, layerStrip, legendLine, lineChart, dotPlot, stackedBars, infusionBlock, motBlock, flops, svgWrap, arrowDef, nextId, r1, placeArrowLabel, tag, whenCentered };
 })();

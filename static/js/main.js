@@ -1,6 +1,7 @@
 /* ==========================================================================
-   Page behavior: draws every figure from DATA, wires tooltips and toggles, animates the bundle diagram,
-   and runs the contents list and tab bar. The teaser film is film.js.
+   Page behavior: draws every figure from DATA, wires tooltips and toggles, builds figures when they reach the middle of
+   the screen, animates the bundle diagram, and runs the contents list and tab bar. The teaser and the protocol grid are
+   anim.js.
    ========================================================================== */
 (function () {
   "use strict";
@@ -23,6 +24,7 @@
   };
   // one decimal, rounding half up on the decimal value (56.65 -> 56.7, as in the paper's tables)
   const f1 = (v) => (Math.round(v * 10 + 1e-6) / 10).toFixed(1);
+  const tag = V.tag;
   function showTip(ev, content) {
     tip.textContent = "";
     if (content.title) {
@@ -204,8 +206,8 @@
       g += V.T(x0, top - 34, "Compute", { size: fs, weight: 700 }) + V.T(x0, top - 16, "FLOPs", { size: fs - 1.5, color: C.faint });
       rows.forEach((r, i) => {
         const y = yOf(i) - bh / 2;
-        if (r.pre) g += `<rect x="${V.r1(sx(0))}" y="${V.r1(y)}" width="${V.r1(sx(r.pre) - sx(0) - 1)}" height="${V.r1(bh)}" fill="${C.pre}"/>`;
-        g += `<rect x="${V.r1(sx(r.pre))}" y="${V.r1(y)}" width="${V.r1(sx(r.pre + F.multimodal) - sx(r.pre))}" height="${V.r1(bh)}" rx="2" fill="#c3c8ce"/>`;
+        if (r.pre) g += `<rect data-b="bar" data-r="${i}" x="${V.r1(sx(0))}" y="${V.r1(y)}" width="${V.r1(sx(r.pre) - sx(0) - 1)}" height="${V.r1(bh)}" fill="${C.pre}"/>`;
+        g += `<rect data-b="bar" data-r="${i}" x="${V.r1(sx(r.pre))}" y="${V.r1(y)}" width="${V.r1(sx(r.pre + F.multimodal) - sx(r.pre))}" height="${V.r1(bh)}" rx="2" fill="#c3c8ce"/>`;
       });
       x0 += barW + gap;
     }
@@ -218,15 +220,15 @@
         p += V.T(sx(t), bottom + fs + 6, String(t), { size: fs - 1, anchor: "middle", color: C.muted, cls: "tnum" });
       });
       p += `<line x1="${V.r1(x0)}" x2="${V.r1(x0 + panW)}" y1="${V.r1(bottom)}" y2="${V.r1(bottom)}" stroke="${C.axis}"/>`;
-      const pts = rows.map((r, i) => (r[key] == null ? null : [sx(r[key]), yOf(i), r])).filter(Boolean);
+      const pts = rows.map((r, i) => (r[key] == null ? null : [sx(r[key]), yOf(i), r, i])).filter(Boolean);
       const pre = pts.filter((q) => q[2].pre);
-      p += `<path d="${pre.map((q, k) => (k ? "L" : "M") + V.r1(q[0]) + "," + V.r1(q[1])).join("")}" fill="none" stroke="${C.pre}" stroke-width="2.2"/>`;
+      p += `<path data-b="line" d="${pre.map((q, k) => (k ? "L" : "M") + V.r1(q[0]) + "," + V.r1(q[1])).join("")}" fill="none" stroke="${C.pre}" stroke-width="2.2"/>`;
       pts.forEach((q) => {
         const isScratch = !q[2].pre;
-        p += V.marker(isScratch ? "circle" : "diamond", q[0], q[1], 6.5, isScratch ? C.enc : C.pre);
-        p += V.T(q[0] + (key === "vqa" ? -11 : 11), q[1] + fs * .34, f1(q[2][key]), { size: fs - 0.5, anchor: key === "vqa" ? "end" : "start", color: C.ink, halo: true, cls: "tnum" });
+        p += tag(V.marker(isScratch ? "circle" : "diamond", q[0], q[1], 6.5, isScratch ? C.enc : C.pre), `data-b="pt" data-r="${q[3]}"`);
+        p += tag(V.T(q[0] + (key === "vqa" ? -11 : 11), q[1] + fs * .34, f1(q[2][key]), { size: fs - 0.5, anchor: key === "vqa" ? "end" : "start", color: C.ink, halo: true, cls: "tnum" }), `data-b="val" data-r="${q[3]}"`);
       });
-      if (key === "imagenet") p += V.T(x0 + 8, yOf(rows.length - 1) + fs * .34, "—", { size: fs, color: C.faint });
+      if (key === "imagenet") p += tag(V.T(x0 + 8, yOf(rows.length - 1) + fs * .34, "—", { size: fs, color: C.faint }), `data-b="val" data-r="${rows.length - 1}"`);
       x0 += panW + gap;
       return p;
     };
@@ -309,8 +311,8 @@
       groups, labelW: 200, labelWNarrow: 184, iconW: 122, hideIconsNarrow: true, rowH: 33,
       x: { domain: [31, 41], ticks: [31, 33, 35, 37, 39, 41], label: "Avg. VQA (%)" },
       refs: [
-        { value: CD.refs.encoderFree.vqa, label: "encoder-free", color: C.ef, labelColor: C.efDark, anchor: "end", dx: 4 },
-        { value: CD.refs.scratch.vqa, label: "scratch encoder", color: C.enc, labelColor: C.encDark, anchor: "end", dx: 4 },
+        { key: "encoderFree", value: CD.refs.encoderFree.vqa, label: "encoder-free", color: C.ef, labelColor: C.efDark, anchor: "end", dx: 4 },
+        { key: "scratch", value: CD.refs.scratch.vqa, label: "scratch encoder", color: C.enc, labelColor: C.encDark, anchor: "end", dx: 4 },
       ],
       side: { header: "Avg. Text" },
     });
@@ -372,6 +374,152 @@
   document.querySelectorAll("[data-chart]").forEach((el) => {
     const f = FIG[el.dataset.chart];
     if (f) mount(el, (w) => f(w, el));
+  });
+
+  // ------------------------------------------------------------ figure builds
+  /* The first time a chart marked data-build reaches the middle of the screen, its marks land in order (its BUILD
+     story); after that it is the same interactive chart. Every animation starts from hidden or undrawn and ends on the
+     chart as drawn, so nothing is left behind. Charts in one figure build one after another, and the figure's Replay
+     runs them again. */
+  const pop = (el, at) => el.animate([{ opacity: 0, transform: "scale(.3)" }, { opacity: 1, transform: "scale(1.15)", offset: 0.65 }, { opacity: 1, transform: "scale(1)" }],
+    { duration: 380, delay: at, easing: "ease-out", fill: "backwards" });
+  const fade = (el, at, dur = 380) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: dur, delay: at, easing: "ease-out", fill: "backwards" });
+  const grow = (el, at, dur = 380, easing = "cubic-bezier(.3, .7, .3, 1)") => el.animate([{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }], { duration: dur, delay: at, easing, fill: "backwards" });
+  // appears dx px from where it is drawn, then slides into place
+  const slide = (el, at, dx) => el.animate([{ opacity: 0, transform: `translateX(${dx}px)` }, { opacity: 1, transform: `translateX(${dx}px)`, offset: 0.2, easing: "cubic-bezier(.3, .7, .3, 1)" }, { opacity: 1, transform: "translateX(0)" }],
+    { duration: 650, delay: at, fill: "backwards" });
+  // reveals a mark from its left edge to its right (or right to left) by clipping it
+  function wipe(el, at, dur, rtl) {
+    const w = el.getBBox().width + 12;
+    return el.animate([{ clipPath: rtl ? `inset(-12px -12px -12px ${w}px)` : `inset(-12px ${w}px -12px -12px)` }, { clipPath: "inset(-12px -12px -12px -12px)" }],
+      { duration: dur, delay: at, easing: "linear", fill: "backwards" });
+  }
+  // reveals a mark as a sweep passes over it; the sweep crosses x0 at time at and moves v px per ms
+  const sweepIn = (el, x0, at, v) => { const b = el.getBBox(); return wipe(el, at + (b.x - 12 - x0) / v, (b.width + 24) / v); };
+  // draws a polyline vertex by vertex: vertex k is reached at reach[k] ms, each segment taking segMs; reverse draws from the end
+  function drawPath(el, reach, reverse, segMs) {
+    const P = (el.getAttribute("d").match(/-?[\d.]+,-?[\d.]+/g) || []).map((q) => q.split(",").map(Number));
+    if (P.length < 2) return null;
+    const cum = [0];
+    for (let k = 1; k < P.length; k++) cum.push(cum[k - 1] + Math.hypot(P[k][0] - P[k - 1][0], P[k][1] - P[k - 1][1]));
+    const L = cum[cum.length - 1], dash = `${L}px ${L}px`;
+    const order = P.map((_, k) => (reverse ? P.length - 1 - k : k));
+    const off = (k) => `${reverse ? -cum[k] : L - cum[k]}px`; // the dash offset that shows the path up to vertex k
+    const t0 = reach[order[1]] - segMs, span = reach[order[order.length - 1]] - t0;
+    const kf = [{ strokeDasharray: dash, strokeDashoffset: off(order[0]), offset: 0 }];
+    for (let n = 1; n < order.length; n++) {
+      kf.push({ strokeDasharray: dash, strokeDashoffset: off(order[n - 1]), offset: (reach[order[n]] - segMs - t0) / span });
+      kf.push({ strokeDasharray: dash, strokeDashoffset: off(order[n]), offset: (reach[order[n]] - t0) / span });
+    }
+    return el.animate(kf, { duration: span, delay: t0, easing: "linear", fill: "backwards" });
+  }
+  const BUILD = {};
+  // Figure 2a: the scratch encoder and its reference line first, then each share of the budget in turn
+  BUILD.upstream = (el, at0) => {
+    const q = (sel) => [...el.querySelectorAll(sel)], A = [];
+    const T = (x) => at0 + 520 + (x - 1) * 330; // x = 1..4: the four shares
+    q('[data-b="pt"][data-s="scratch"]').forEach((m) => A.push(pop(m, at0)));
+    q('[data-b="ref"]').forEach((m, k) => A.push(fade(m, at0 + 150 + 150 * k, 450)));
+    q('[data-b="pt"]:not([data-s="scratch"])').forEach((m) => A.push(pop(m, T(+m.dataset.x) + 120)));
+    q('[data-b="line"]').forEach((l) => A.push(drawPath(l, [1, 2, 3, 4].map((x) => T(x) + 120), false, 240)));
+    return { anims: A.filter(Boolean), dur: 520 + 3 * 330 + 520 };
+  };
+  // Figure 7: rows land from the bottom (no pretraining) to the top (the most); the pretraining line climbs with them
+  BUILD.free = (el, at0) => {
+    const q = (sel) => [...el.querySelectorAll(sel)], A = [];
+    const n = D.freePretraining.rows.length, T = (r) => at0 + (n - 1 - r) * 260; // row r, counted from the top
+    q('[data-b="bar"]').forEach((b) => A.push(grow(b, T(+b.dataset.r))));
+    q('[data-b="pt"]').forEach((m) => A.push(pop(m, T(+m.dataset.r) + 140)));
+    q('[data-b="val"]').forEach((v) => A.push(fade(v, T(+v.dataset.r) + 280, 300)));
+    q('[data-b="line"]').forEach((l) => A.push(drawPath(l, [...Array(n - 1).keys()].map((r) => T(r) + 140), true, 220)));
+    return { anims: A.filter(Boolean), dur: (n - 1) * 260 + 600 };
+  };
+  // Figures 3 and 6: a sweep draws each panel's lines from left to right, and markers and size labels land as it passes;
+  // then the compute arrows draw in one after another, each followed by its factor
+  const sweepStory = (ms) => (el, at0) => {
+    const A = [];
+    let end = at0 + ms;
+    el.querySelectorAll("g.panel").forEach((p) => {
+      const hit = p.querySelector("rect.hit"), x0 = +hit.getAttribute("x") + 8, v = (+hit.getAttribute("width") - 16) / ms;
+      const when = (x) => at0 + Math.max(0, x - x0) / v;
+      p.querySelectorAll('[data-b="line"]').forEach((l) => A.push(sweepIn(l, x0, at0, v)));
+      p.querySelectorAll('[data-b="pt"]').forEach((m) => A.push(pop(m, when(m.getBBox().x))));
+      p.querySelectorAll('[data-b="note"]').forEach((t) => A.push(fade(t, when(t.getBBox().x))));
+      p.querySelectorAll('line[data-b="arrow"]').forEach((ln, k) => {
+        const t = at0 + ms + 200 + k * 320, lab = ln.nextElementSibling;
+        A.push(wipe(ln, t, 420, +ln.getAttribute("x1") > +ln.getAttribute("x2")));
+        if (lab && lab.dataset.b === "arrow") A.push(fade(lab, t + 320, 320));
+        end = Math.max(end, t + 640);
+      });
+    });
+    return { anims: A, dur: end - at0 };
+  };
+  BUILD.trajEF = sweepStory(1500);
+  BUILD.ladder = sweepStory(1600);
+  // Table 3: the reference lines, then each row's layer strip fills in, then each score slides to its place from
+  // encoder-free's, since every row adds its capacity to the encoder-free backbone
+  BUILD.capDesign = (el, at0) => {
+    const q = (sel) => [...el.querySelectorAll(sel)], A = [];
+    q('[data-b="ref"]').forEach((r) => A.push(fade(r, at0, 400)));
+    const strips = q('[data-b="strip"]');
+    strips.forEach((s) => A.push(wipe(s, at0 + 200 + 60 * +s.dataset.r, 300)));
+    const t0 = at0 + (strips.length ? 200 + 60 * (strips.length - 1) + 360 : 250);
+    const ef = el.querySelector('line[data-b="ref"][data-s="encoderFree"]'), xEF = ef && +ef.getAttribute("x1");
+    let end = t0;
+    q('[data-b="pt"]').forEach((m) => {
+      const r = +m.dataset.r, t = t0 + 90 * r, b = m.getBBox();
+      A.push(ef ? slide(m, t, xEF - (b.x + b.width / 2)) : pop(m, t));
+      q(`[data-b="val"][data-r="${r}"]`).forEach((v) => A.push(fade(v, t + 560, 260)));
+      end = Math.max(end, t + 820);
+    });
+    return { anims: A, dur: end - at0 };
+  };
+  // Figure 9: the backbone prefill every recipe shares, then each recipe's added vision time grows at one speed, so the
+  // quickest finishes first
+  BUILD.ttft = (el, at0) => {
+    const q = (sel) => [...el.querySelectorAll(sel)], A = [];
+    q('[data-b="bar"]').forEach((b) => A.push(grow(b, at0 + 30 * +b.dataset.r, 450)));
+    q('[data-b="ref"]').forEach((r) => A.push(fade(r, at0 + 250, 400)));
+    const t0 = at0 + 750;
+    let end = t0;
+    q('[data-b="add"]').forEach((b) => {
+      const d = +b.dataset.v * 28; // 28 ms of animation per ms of added time
+      A.push(d ? grow(b, t0, d, "linear") : fade(b, t0, 200));
+      q(`[data-b="val"][data-r="${b.dataset.r}"]`).forEach((v) => A.push(fade(v, t0 + d, 260)));
+      end = Math.max(end, t0 + d + 260);
+    });
+    return { anims: A, dur: end - at0 };
+  };
+  const running = new Map(); // chart -> its animations
+  function build(el, at) {
+    (running.get(el) || []).forEach((a) => a.cancel());
+    el.classList.remove("pre-build");
+    const { anims, dur } = BUILD[el.dataset.chart](el, at);
+    running.set(el, anims);
+    return at + dur;
+  }
+  document.querySelectorAll("figure").forEach((fig) => {
+    const charts = [...fig.querySelectorAll("[data-build]")].filter((el) => BUILD[el.dataset.chart]);
+    if (!charts.length) return;
+    const btn = fig.querySelector(".replay");
+    if (reduceMotion || !document.body.animate) { if (btn) btn.hidden = true; return; }
+    let freeAt = 0; // when the figure's last build ends, on the performance.now() clock
+    const started = new Set();
+    charts.forEach((el) => {
+      el.classList.add("pre-build");
+      V.whenCentered(el, () => {
+        if (started.has(el)) return;
+        started.add(el);
+        const now = performance.now(), at = Math.max(0, freeAt - 250 - now);
+        freeAt = now + build(el, at);
+      });
+    });
+    if (btn) btn.addEventListener("click", () => {
+      charts.forEach((el) => started.add(el));
+      let at = 0;
+      charts.forEach((el) => { at = build(el, at) - 250; });
+      freeAt = performance.now() + at + 250;
+    });
   });
 
   // schematics + glyphs
@@ -493,11 +641,10 @@
       tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
     });
     go(S[params.get("bundle")] ? params.get("bundle") : "pretrained");
-    // play the four recipes once when the diagram first comes into view
-    if (!reduceMotion && "IntersectionObserver" in window) {
-      const io = new IntersectionObserver((es) => es.forEach((e) => {
-        if (!e.isIntersecting || touched) return;
-        io.disconnect();
+    // play the four recipes once when the diagram first reaches the middle of the screen
+    if (!reduceMotion) {
+      V.whenCentered(bundleEl, () => {
+        if (touched) return;
         let k = 0;
         const next = () => {
           if (touched) return;
@@ -506,8 +653,7 @@
           else timer = setTimeout(() => !touched && go("pretrained"), 2200);
         };
         timer = setTimeout(next, 1400);
-      }), { threshold: 0.55 });
-      io.observe(bundleEl);
+      });
     }
   }
 

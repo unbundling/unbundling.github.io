@@ -14,7 +14,6 @@ python3 -m http.server 8971 --bind 127.0.0.1
 
 - Add `?static` to the URL to show every animated element in its final state. Use it for screenshots and print.
 - Add `?static&bundle=infusion` (or `pretrained`, `scratch`, `free`) to pin the recipe diagram to one recipe.
-- Add `?film=prior@8` (any chapter key in `film.js`, then seconds) to open the teaser film paused on one frame.
 
 ## Layout
 
@@ -22,9 +21,9 @@ python3 -m http.server 8971 --bind 127.0.0.1
 |---|---|
 | Text, section order, captions, links | `index.html` |
 | Every plotted number (each block names its paper figure or table) | `static/js/data.js` |
-| Glyphs, schematics and chart drawing | `static/js/viz.js` |
-| Figure assembly, tooltips, toggles, the recipe diagram, contents list and tab bar | `static/js/main.js` |
-| Teaser film: one animated chapter per section, every frame drawn from `data.js` (each chapter's timing is its `T` table; each layout table holds a wide variant and a tall one for phones) | `static/js/film.js` |
+| Glyphs, schematics and chart drawing, and the trigger that starts every animated figure once it reaches the middle of the screen | `static/js/viz.js` |
+| Figure assembly, tooltips, toggles, figure builds (a chart's marks land in order the first time it reaches the middle of the screen; each chart's order is its `BUILD` story), the recipe diagram, contents list and tab bar | `static/js/main.js` |
+| The teaser and §2's protocol grid, drawn frame by frame (each one's timing is its `T` table; each layout table holds a wide variant and a tall one for phones) | `static/js/anim.js` |
 | Colors, type and layout (`:root` holds the paper palette) | `static/css/style.css` |
 | Logos, favicon, social card | `static/img/` |
 | TeX Gyre Pagella (Palatino clone, GUST Font License) | `static/fonts/` |

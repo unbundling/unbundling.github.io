@@ -106,16 +106,11 @@
   </ol>
 </nav>
 
-<!-- ===================================================================== teaser film -->
-<!-- film.js draws every frame into the stage and fills the chapter bar; click the stage or press space to pause. -->
-<figure class="film wide">
-  <div class="film-stage" tabindex="0">
-    <svg viewBox="0 0 960 540" role="img" aria-label="An animated overview of the paper"><g class="film-body"></g></svg>
-  </div>
-  <div class="chapters">
-    <button class="ch-btn" type="button" aria-label="Play"></button>
-    <div class="ch-list"></div>
-  </div>
+<!-- ===================================================================== teaser -->
+<!-- anim.js draws the three questions and answers them in turn; each question links to its section. -->
+<figure class="teaser wide">
+  <svg class="anim" viewBox="0 0 960 500" role="group" aria-label="Three questions about the vision encoder, answered: separate pretraining is optional, dedicated vision capacity is key, and vision capacity can be in-fusion."><g></g></svg>
+  <button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button>
 </figure>
 
 <!-- ===================================================================== summary -->
@@ -165,6 +160,17 @@
 
   <h3>One controlled protocol</h3>
   <p>Published models differ in data, architecture, training stages, and compute, so comparing them cannot isolate any one choice. Controlled studies of pretrained encoders hold the multimodal stage fixed, but they vary <em>which</em> prior an encoder imports rather than <em>whether</em> it needs one, and they treat encoder pretraining as free, though SigLIP&nbsp;2, for example, trains on 40B image–text samples. We instead run every training stage ourselves, from random initialization.</p>
+
+  <figure class="viz wide" id="fig-protocol">
+    <div class="vh">
+      <div>
+        <h4>Only the vision encoding differs</h4>
+        <p class="dek">Published models differ in everything at once; we hold everything else fixed.</p>
+      </div>
+      <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button></div>
+    </div>
+    <svg class="anim" viewBox="0 84 960 396" role="img" aria-label="Published recipes differ in data, training schedule, compute and backbone. In this study all four are shared, so only the vision encoding differs."><g></g></svg>
+  </figure>
   <div class="cards wide">
     <div class="card">
       <h4><svg aria-hidden="true"><use href="#ic-data"/></svg>Common data</h4>
@@ -215,7 +221,7 @@
         <h4>Separate encoder pretraining</h4>
         <p class="dek">Encoder pretraining is not beneficial at matched lifetime compute, and more of it improves recognition but not VQA, even when it is free.</p>
       </div>
-      <div class="seg" data-for="fig-prior" role="group" aria-label="Metric"><button data-metric="vqa" aria-pressed="true">Avg. VQA</button><button data-metric="text" aria-pressed="false">Avg. Text</button></div>
+      <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button><div class="seg" data-for="fig-prior" role="group" aria-label="Metric"><button data-metric="vqa" aria-pressed="true">Avg. VQA</button><button data-metric="text" aria-pressed="false">Avg. Text</button></div></div>
     </div>
     <div class="two-up">
       <div class="sub">
@@ -228,7 +234,7 @@
           <span class="li"><span data-key="cappa"></span>CapPa</span>
         </div>
         <div class="ytitle" data-ytitle-for="upstream">Avg. VQA (%)</div>
-        <div class="chart" data-chart="upstream"></div>
+        <div class="chart" data-chart="upstream" data-build></div>
       </div>
       <div class="sub">
         <div class="sub-title">Longer pretraining, for free: better ImageNet, not better VQA</div>
@@ -237,7 +243,7 @@
           <span class="li"><span class="sw" style="--c: #c3c8ce"></span>Multimodal training</span>
         </div>
         <div class="ytitle spacer" aria-hidden="true">&nbsp;</div>
-        <div class="chart" data-chart="free"></div>
+        <div class="chart" data-chart="free" data-build></div>
       </div>
     </div>
     <figcaption>Left: a 1.7B backbone with a fixed 1.04×10<sup>22</sup>-FLOP budget. Right: MetaCLIP pretraining that is not charged to the budget, followed by the same multimodal stage.</figcaption>
@@ -261,14 +267,14 @@
         <h4>Encoder-free versus the scratch encoder</h4>
         <p class="dek">Encoder-free trails the encoder on Avg. VQA, while Avg. Text stays comparable.</p>
       </div>
-      <div class="seg" data-for="fig-ef" role="group" aria-label="Metric"><button data-metric="vqa" aria-pressed="true">Avg. VQA</button><button data-metric="text" aria-pressed="false">Avg. Text</button></div>
+      <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button><div class="seg" data-for="fig-ef" role="group" aria-label="Metric"><button data-metric="vqa" aria-pressed="true">Avg. VQA</button><button data-metric="text" aria-pressed="false">Avg. Text</button></div></div>
     </div>
     <div class="legend">
       <span class="li"><span data-key="encoderFree"></span>Encoder-free</span>
       <span class="li"><span data-key="scratch"></span>Scratch encoder</span>
     </div>
     <div class="ytitle" data-ytitle-for="trajEF">Avg. VQA (%)</div>
-    <div class="chart" data-chart="trajEF"></div>
+    <div class="chart" data-chart="trajEF" data-build></div>
     <figcaption>Each point is a learning-rate-decayed run; arrows mark how much more compute encoder-free needs to match the encoder's Avg. VQA.</figcaption>
   </figure>
 
@@ -315,11 +321,14 @@
   <p>Where should the budget go, and who should use it? Holding it at 0.4B parameters, we vary both.</p>
 
   <figure class="viz wide narrowish">
-    <div class="vh"><div>
-      <h4>Who uses the added capacity, and where it sits</h4>
-      <p class="dek">Added capacity helps most when reserved for vision tokens and placed early.</p>
-    </div></div>
-    <div class="chart" data-chart="capDesign"></div>
+    <div class="vh">
+      <div>
+        <h4>Who uses the added capacity, and where it sits</h4>
+        <p class="dek">Added capacity helps most when reserved for vision tokens and placed early.</p>
+      </div>
+      <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button></div>
+    </div>
+    <div class="chart" data-chart="capDesign" data-build></div>
     <figcaption>Every row adds 0.4B parameters to the 1.7B encoder-free backbone (2.6×10<sup>21</sup> FLOPs, 158 tokens per parameter); the vision-only FFN branch in the first eight layers is in-fusion (FFN-only). Strips show the 28 layers: gray is used by all tokens, blue by vision tokens only, and taller is wider.</figcaption>
   </figure>
 
@@ -352,16 +361,19 @@
   <p>We also train the three recipes on a ladder of backbone sizes and token budgets, growing the vision module with the backbone, and fit one law per recipe in model size and training tokens. The figure shows the runs at 128 tokens per parameter.</p>
 
   <figure class="viz wide">
-    <div class="vh"><div>
-      <h4>Per-recipe scaling laws across backbone sizes</h4>
-      <p class="dek">Encoder-free's gap to the encoder grows with scale, while in-fusion is nearly indistinguishable from the encoder.</p>
-    </div></div>
+    <div class="vh">
+      <div>
+        <h4>Per-recipe scaling laws across backbone sizes</h4>
+        <p class="dek">Encoder-free's gap to the encoder grows with scale, while in-fusion is nearly indistinguishable from the encoder.</p>
+      </div>
+      <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button></div>
+    </div>
     <div class="legend">
       <span class="li"><span data-key="encoderFree"></span>Encoder-free</span>
       <span class="li"><span data-key="scratch"></span>Scratch encoder</span>
       <span class="li"><span data-key="infusion"></span>In-fusion</span>
     </div>
-    <div class="chart" data-chart="ladder"></div>
+    <div class="chart" data-chart="ladder" data-build></div>
     <figcaption>Points are runs and curves are each recipe's fitted law; arrows give the factor of compute encoder-free needs to match the encoder.</figcaption>
   </figure>
 
@@ -391,11 +403,14 @@
   <h3>Time to first token</h3>
   <p>A separate encoder must finish each image before the backbone can start, which adds a serial step to inference.</p>
   <figure class="viz wide narrowish">
-    <div class="vh"><div>
-      <h4>Time to first token by recipe</h4>
-      <p class="dek">At the same vision-only budget, in-fusion adds the least time to first token.</p>
-    </div></div>
-    <div class="chart" data-chart="ttft"></div>
+    <div class="vh">
+      <div>
+        <h4>Time to first token by recipe</h4>
+        <p class="dek">At the same vision-only budget, in-fusion adds the least time to first token.</p>
+      </div>
+      <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button></div>
+    </div>
+    <div class="chart" data-chart="ttft" data-build></div>
     <figcaption>1.7B backbone on one H200 with 16 concurrent requests, each with one 224-px image and 256 text tokens; percentages are relative to encoder-free.</figcaption>
   </figure>
   <p>The encoder-free model is fastest, but at 1.7B and 2.6×10<sup>21</sup> FLOPs it trails the encoder by 4.9 Avg. VQA points.</p>
@@ -431,6 +446,6 @@
 <script src="static/js/data.js"></script>
 <script src="static/js/viz.js"></script>
 <script src="static/js/main.js"></script>
-<script src="static/js/film.js"></script>
+<script src="static/js/anim.js"></script>
 </body>
 </html>
