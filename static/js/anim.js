@@ -1,6 +1,7 @@
 /* ==========================================================================
-   Animated figures: the teaser (the three questions, answered in turn) and §2's protocol grid (published recipes
-   differ in everything; this study fixes everything but the vision encoding).
+   Animated figures: the teaser (the three questions, answered in turn) and §2's protocol grid (published models differ
+   in everything, so no comparison is clean; this study fixes each control to one listed setting, leaving the vision
+   encoding as the only difference).
    Every frame is drawn from time alone. Each figure plays once when it reaches the middle of the screen and again on
    Replay; reduced motion and ?static show the last frame.
    Glyphs, markers and colors come from Viz (viz.js). Each figure has a wide layout and a tall one for phones;
@@ -161,14 +162,26 @@
     return s;
   }
 
-  // ------------------------------------------------------------ §2 protocol grid: published recipes, then one controlled setting
-  /* Rows are the four controls. Published recipes differ in all four at once; the rows then snap to one shared setting
-     each, in-fusion joins, and the recipe (the glyph row) is the only thing left that differs. On the tall layout each
-     row's label sits above its cells, and the cells are drawn smaller. */
-  const TG = { snap: [0.7, 1.3, 1.9, 2.5], snapDur: 0.55, cols: [3.3, 3.8], inf: [3.55, 4.05], band: 4.4, dur: 4.9 };
+  // ------------------------------------------------------------ §2 protocol: published models differ in everything; we fix all but the vision encoding
+  /* Rows are the four controls. Published models (one per recipe) differ in all four at once, so no comparison between
+     them is clean. Each row then snaps to one common setting, its cells merging into one, and the setting is listed
+     beside it. Last, the recipes become the vision-encoding band and in-fusion joins: the only thing left that differs.
+     On the tall layout each row's label sits above its cells, the cells are drawn smaller, and the listed settings wrap. */
+  const TG = { ne: [0.4, 0.55, 0.7, 0.85], msg: [1.3, 2.8], fix: [3.2, 3.85, 4.5, 5.15], fixDur: 0.6, head: 5.9, inf: [6.2, 6.7], dur: 6.9 };
+  const PROTO = [
+    { id: "data", label: "Data", fixed: "Common data", lines: ["Text from Nemotron-CC v2 and v2.1", "Image–text pairs from MetaCLIP 1.2 (English subset)", "One set of Qwen2.5-VL-32B captions, shared by all recipes"] },
+    { id: "schedule", label: "Training schedule", fixed: "Training schedule", lines: ["Warmup–stable–decay: any checkpoint can be decayed", "Budgets from 6.5×10^{20} to 2.9×10^{22} FLOPs", "One peak learning rate per backbone size"] },
+    { id: "compute", label: "Compute", fixed: "Lifetime compute", eq: "C_{lifetime} = Σ_{s} C_{s}", lines: ["Every training stage counts, encoder pretraining too", "Recipes are compared at matched lifetime compute"] },
+    { id: "backbone", label: "Backbone", fixed: "One backbone", lines: ["Dense decoder-only Transformer, trained from scratch", "Mainly the Qwen3-1.7B and 4B configurations", "One encoder architecture: a 27-layer, 0.4B ViT"] },
+  ];
+  // XM, YM: where a row's cells merge (YM from the row); dx, dw, dfs, dlh, dy: the listed settings' left edge, width, size,
+  // line step and offset from the row; msg: the "no clean comparison" note's center and size. On the tall layout the
+  // merged setting moves up beside its label, so the list below it can use the full width.
   const GR = table(
-    { HY: 128, gh: 46, ny: 48, ns: 15.5, RY: [222, 296, 370, 444], X3: [363, 592, 821], X4: [334, 506, 678, 850], cs: 1, cdy: 0, lx: 40, ldy: 0, ls: 17.5, band: [252, 96, 684, 94], vx: 40, vy: 134, vs: 17.5 },
-    { HY: 162, gh: 30, ny: 33, ns: 13, RY: [276, 396, 516, 636], X3: [87, 220, 353], X4: [70, 170, 270, 370], cs: 0.66, cdy: 16, lx: 20, ldy: -28, ls: 15.5, band: [20, 128, 400, 78], vx: 20, vy: 118, vs: 14 });
+    { HY: 128, gh: 46, ny: 48, ns: 15.5, RY: [236, 328, 420, 512], X3: [363, 592, 821], X4: [334, 506, 678, 850], XM: 322, YM: 0, cs: 1, cdy: 0, lx: 40, ldy: 0, ls: 17.5,
+      band: [252, 92, 688, 98], vx: 40, vy: 134, vs: 17.5, ne: 26, dx: 418, dw: 520, dfs: 16, dlh: 22, dy: -22, msg: [594, 374, 560, 74] },
+    { HY: 162, gh: 30, ny: 33, ns: 13, RY: [282, 446, 610, 774], X3: [87, 220, 353], X4: [70, 170, 270, 370], XM: 364, YM: -28, cs: 0.66, cdy: 16, lx: 20, ldy: -28, ls: 17,
+      band: [20, 128, 400, 78], vx: 20, vy: 118, vs: 14, ne: 20, dx: 20, dw: 400, dfs: 16, dlh: 21, dy: 8, msg: [220, 528, 404, 80] });
   const COLS = [["pretrained", "Pretrained encoder", "Pretrained", C.preDark], ["scratch", "Scratch encoder", "Scratch", C.encDark], ["free", "Encoder-free", "Encoder-free", C.efDark], ["infusion", "In-fusion", "In-fusion", C.infDark]];
   const GRAY_F = ["#e6e9ed", "#d9dde2", "#eef0f2"], GRAY_S = "#9aa1ab";
 
@@ -243,33 +256,77 @@
   }
   const CELL = [cellData, cellSchedule, cellCompute, cellBackbone];
 
+  // a row's listed settings, each broken to the column's width: the equation (if any), then one bulleted line per setting
+  const wraps = new Map();
+  function wrap(str, size, maxW) {
+    const key = `${str}|${size}|${maxW}`;
+    if (!wraps.has(key)) {
+      const out = [];
+      let cur = "";
+      str.split(" ").forEach((w) => {
+        const next = cur ? `${cur} ${w}` : w;
+        if (cur && tw(next.replace(/[\^_]\{([^}]*)\}/g, "$1"), size) > maxW) { out.push(cur); cur = w; } else cur = next;
+      });
+      out.push(cur);
+      wraps.set(key, out);
+    }
+    return wraps.get(key);
+  }
+  function settingLines(P) {
+    const out = P.eq ? [{ s: P.eq, eq: true }] : [];
+    P.lines.forEach((l) => wrap(l, GR.dfs, GR.dw - 12).forEach((str, k) => out.push({ s: str, bullet: k === 0 })));
+    return out;
+  }
+
   function drawGrid(t) {
-    const snapAt = (i) => inOut(seg(t, TG.snap[i], TG.snap[i] + TG.snapDur));
+    const ov = outC(seg(t, TG.msg[0], TG.msg[0] + 0.3)) * (1 - seg(t, TG.msg[1], TG.msg[1] + 0.3)), dim = 1 - 0.62 * ov;
+    const h = inOut(seg(t, TG.head, TG.head + 0.6)), hb = outC(seg(t, TG.head, TG.head + 0.5)), inf = outC(seg(t, TG.inf[0], TG.inf[1]));
     let s = "";
-    STRIP.forEach(([id, label], i) => {
-      const y = GR.RY[i] + GR.ldy;
-      s += icon(id, GR.lx, y - 12, 24, mix(ICON, TEAL, snapAt(i))) + V.T(GR.lx + 33, y + 6.5, label, { size: GR.ls, color: C.ink });
-    });
-    // recipe columns: three published recipes, then in-fusion joins once everything else is fixed
-    const c4 = inOut(seg(t, TG.cols[0], TG.cols[1])), inf = outC(seg(t, TG.inf[0], TG.inf[1]));
-    const colX = (j) => (j < 3 ? lerp(GR.X3[j], GR.X4[j], c4) : GR.X4[3] + 24 * (1 - inf));
-    const hb = outC(seg(t, TG.band, TG.band + 0.5));
+    // header: the published models' recipes, which become the vision-encoding band once everything else is fixed
     if (hb > 0) {
       const [bx, by, bw, bh] = GR.band;
       s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="12" fill="${TEAL_L}" stroke="${TEAL}" stroke-width="1.5" opacity="${hb.toFixed(3)}"/>`;
-      s += grp(V.T(GR.vx, GR.vy, "Vision encoding", { size: GR.vs, weight: 600, color: TEAL_D }), { o: hb, x: -8 * (1 - hb) });
     }
+    s += grp(V.T(GR.vx, GR.vy, "Published models", { size: GR.vs, weight: 600, color: C.muted }), { o: 1 - hb });
+    s += grp(V.T(GR.vx, GR.vy, "Vision encoding", { size: GR.vs, weight: 600, color: TEAL_D }), { o: hb, x: -8 * (1 - hb) });
     COLS.forEach(([kind, name, short, color], j) => {
-      const o = j < 3 ? 1 : inf;
-      if (o > 0) s += grp(glyphAt(kind, colX(j), GR.HY, GR.gh) + V.T(colX(j), GR.HY + GR.ny, TALL ? short : name, { size: GR.ns, weight: 600, color, anchor: "middle" }), { o, y: j < 3 ? 0 : -10 * (1 - o) });
+      const o = j < 3 ? 1 : inf, x = j < 3 ? lerp(GR.X3[j], GR.X4[j], h) : GR.X4[3] + 24 * (1 - inf);
+      if (o > 0) s += grp(glyphAt(kind, x, GR.HY, GR.gh) + V.T(x, GR.HY + GR.ny, TALL ? short : name, { size: GR.ns, weight: 600, color, anchor: "middle" }), { o, y: j < 3 ? 0 : -10 * (1 - o) });
     });
-    GR.RY.forEach((ry, i) => {
-      const e = snapAt(i), y = ry + GR.cdy;
-      COLS.forEach((_, j) => {
-        const o = j < 3 ? 1 : inf;
-        if (o > 0) s += grp(CELL[i](colX(j), y, j, j < 3 ? e : 1), { o, s: GR.cs, cx: colX(j), cy: y });
+    PROTO.forEach((P, i) => {
+      const f = TG.fix[i], e = inOut(seg(t, f, f + TG.fixDur)), m = inOut(seg(t, f + 0.1, f + 0.1 + TG.fixDur));
+      const ly = GR.RY[i] + GR.ldy, cy = GR.RY[i] + GR.cdy;
+      // label: the control, renamed for its common setting once fixed
+      s += icon(P.id, GR.lx, ly - 12, 24, mix(ICON, TEAL, e));
+      const lab = (str, o) => grp(V.T(GR.lx + 33, ly + 6.5, str, { size: GR.ls, color: C.ink }), { o });
+      s += P.fixed === P.label ? lab(P.label, 1) : lab(P.label, 1 - e) + lab(P.fixed, e);
+      // cells: one per published model, then merged into the one common setting
+      [0, 1, 2].forEach((j) => {
+        const x = lerp(GR.X3[j], GR.XM, m), y = lerp(cy, GR.RY[i] + GR.YM, m), o = (j ? 1 - seg(m, 0.55, 1) : 1) * dim;
+        if (o > 0.002) s += grp(CELL[i](x, y, j, e), { o, s: GR.cs, cx: x, cy: y });
+      });
+      // the published models differ
+      const ne = outC(seg(t, TG.ne[i], TG.ne[i] + 0.25)) * (1 - seg(t, TG.msg[1], TG.msg[1] + 0.3)) * dim;
+      if (ne > 0.002) [0, 1].forEach((j) => { s += grp(V.T((GR.X3[j] + GR.X3[j + 1]) / 2, cy + GR.ne * 0.34, "≠", { size: GR.ne, anchor: "middle", color: "#9aa1ab" }), { o: ne }); });
+      // the common setting, listed line by line
+      let y = GR.RY[i] + GR.dy;
+      settingLines(P).forEach((L, k) => {
+        if (TALL && L.bullet && k) y += 3;
+        const o = outC(seg(t, f + 0.5 + 0.08 * k, f + 0.9 + 0.08 * k));
+        if (o > 0.002) {
+          const dot = L.bullet ? `<circle cx="${GR.dx + 3}" cy="${r1(y - 0.5)}" r="2.1" fill="#9aa1ab"/>` : "";
+          s += grp(dot + V.T(GR.dx + 12, y + GR.dfs * 0.34, L.s, { size: GR.dfs, color: L.eq ? TEAL_D : INK2 }), { o, y: 4 * (1 - o) });
+        }
+        y += GR.dlh;
       });
     });
+    // so no comparison between them is clean
+    if (ov > 0.002) {
+      const [mx, my, mw, mh] = GR.msg;
+      s += grp(`<rect x="${mx - mw / 2}" y="${my - mh / 2}" width="${mw}" height="${mh}" rx="12" fill="#fff" stroke="#d5d8db" stroke-width="1.4"/>` +
+        V.T(mx, my - (TALL ? 5 : 4), "No clean comparison", { size: TALL ? 17 : 19, weight: 600, anchor: "middle", color: C.ink }) +
+        V.T(mx, my + (TALL ? 18 : 21), "Any gap between them could come from any of these.", { size: TALL ? 13.5 : 15.5, anchor: "middle", color: C.muted }), { o: ov, y: 6 * (1 - ov) });
+    }
     return s;
   }
 
@@ -313,6 +370,6 @@
   const teaser = document.querySelector(".teaser");
   if (teaser) animate(teaser, drawOverview, T0.dur, [[0, 0, 960, 500], [0, 0, 440, 800]]);
   const grid = document.getElementById("fig-protocol");
-  if (grid) animate(grid, drawGrid, TG.dur, [[0, 84, 960, 396], [0, 100, 440, 584]]);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { widths.clear(); figures.forEach((r) => r()); });
+  if (grid) animate(grid, drawGrid, TG.dur, [[0, 84, 960, 470], [0, 100, 440, 750]]);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { widths.clear(); wraps.clear(); figures.forEach((r) => r()); });
 })();

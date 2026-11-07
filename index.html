@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="static/css/style.css">
 </head>
 <body>
-<!-- Protocol icons: the teaser strip and the protocol cards both use these. -->
+<!-- Protocol icons: the teaser strip and the protocol figure both use these. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="ic-data" viewBox="0 0 24 24"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.75" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 5.5v13c0 1.5 3.4 2.75 7.5 2.75s7.5-1.25 7.5-2.75v-13M4.5 12c0 1.5 3.4 2.75 7.5 2.75s7.5-1.25 7.5-2.75" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
   <symbol id="ic-schedule" viewBox="0 0 24 24"><circle cx="5" cy="5" r="1.8" fill="currentColor"/><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="5" cy="19" r="1.8" fill="currentColor"/><path d="M5 6.8v3.4M5 13.8v3.4" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="3.5" width="11" height="3" rx="1.5" fill="currentColor" opacity=".45"/><rect x="9" y="10.5" width="8" height="3" rx="1.5" fill="currentColor" opacity=".45"/><rect x="9" y="17.5" width="11" height="3" rx="1.5" class="t-acc"/></symbol>
@@ -169,42 +169,8 @@
       </div>
       <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button></div>
     </div>
-    <svg class="anim" viewBox="0 84 960 396" role="img" aria-label="Published recipes differ in data, training schedule, compute and backbone. In this study all four are shared, so only the vision encoding differs."><g></g></svg>
+    <svg class="anim" viewBox="0 84 960 470" role="img" aria-label="Published models differ in data, training schedule, compute and backbone all at once, so no comparison between them is clean. We fix each to one common setting. Common data: text from Nemotron-CC v2 and v2.1, image–text pairs from MetaCLIP 1.2 (English subset), and one set of Qwen2.5-VL-32B captions shared by all recipes. Training schedule: warmup–stable–decay, so any checkpoint can be decayed; budgets from 6.5×10^20 to 2.9×10^22 FLOPs; one peak learning rate per backbone size. Lifetime compute: every training stage counts, encoder pretraining too, and recipes are compared at matched lifetime compute. One backbone: a dense decoder-only Transformer trained from scratch, mainly the Qwen3-1.7B and 4B configurations, with one encoder architecture, a 27-layer, 0.4B ViT. Only the vision encoding differs: pretrained encoder, scratch encoder, encoder-free, and in-fusion."><g></g></svg>
   </figure>
-  <div class="cards wide">
-    <div class="card">
-      <h4><svg aria-hidden="true"><use href="#ic-data"/></svg>Common data</h4>
-      <ul>
-        <li>Text from Nemotron-CC v2 and v2.1</li>
-        <li>Image–text pairs from MetaCLIP 1.2 (English subset)</li>
-        <li>One set of Qwen2.5-VL-32B captions, shared by all recipes</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h4><svg aria-hidden="true"><use href="#ic-schedule"/></svg>Training schedule</h4>
-      <ul>
-        <li>Warmup–stable–decay: any checkpoint can be decayed</li>
-        <li>Budgets from 6.5×10<sup>20</sup> to 2.9×10<sup>22</sup> FLOPs</li>
-        <li>One peak learning rate per backbone size</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h4><svg aria-hidden="true"><use href="#ic-compute"/></svg>Lifetime compute</h4>
-      <p class="eq">C<sub>lifetime</sub> = Σ<sub>s</sub> C<sub>s</sub></p>
-      <ul>
-        <li>Every training stage counts, encoder pretraining too</li>
-        <li>Recipes are compared at matched lifetime compute</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h4><svg aria-hidden="true"><use href="#ic-backbone"/></svg>One backbone</h4>
-      <ul>
-        <li>Dense decoder-only Transformer, trained from scratch</li>
-        <li>Mainly the Qwen3-1.7B and 4B configurations</li>
-        <li>One encoder architecture: a 27-layer, 0.4B ViT</li>
-      </ul>
-    </div>
-  </div>
   <p class="metrics"><b>Avg. VQA</b> averages four category means over 16 Cambrian benchmarks, after instruction tuning on Cambrian-7M. <b>Avg. Text</b> does the same over 12 language benchmarks.</p>
 </section>
 
