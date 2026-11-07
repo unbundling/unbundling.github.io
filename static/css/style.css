@@ -168,8 +168,7 @@ figcaption b { color: var(--ink); }
 /* figure builds (main.js): a chart's marks stay hidden until its build starts, then land in order */
 .pre-build [data-b] { opacity: 0; }
 .chart [data-b="pt"] { transform-box: fill-box; transform-origin: center; }
-.chart [data-b="bar"], .chart [data-b="add"] { transform-box: fill-box; transform-origin: 0 50%; }
-.schematic [data-b="joint"] { transform-box: fill-box; transform-origin: center; }
+.chart [data-b="bar"], .chart [data-b="add"], .chart [data-b="fill"] { transform-box: fill-box; transform-origin: 0 50%; }
 .tnum { font-variant-numeric: tabular-nums; }
 .hit-row { cursor: default; }
 .hit-row.on { fill: rgba(28, 43, 51, .035); }
@@ -199,6 +198,15 @@ figcaption b { color: var(--ink); }
 .schematics { display: grid; grid-template-columns: 1.27fr 1fr; gap: 30px; align-items: start; }
 .sch-t { font-size: 17px; color: var(--ink-2); margin: 0 0 6px; }
 .sch svg { width: 100%; height: auto; display: block; }
+/* pointing at a part explains it (main.js); pointing at a token dims what that token skips */
+.schematic [data-tip] { cursor: help; }
+.schematic .tip-on > rect:not(.hit), .schematic .tip-on > circle { stroke-width: 2.6px; }
+.schematic [data-tip="stream"].tip-on > rect { fill: #e6e9ec; }
+.schematic [data-tip="tstream"].tip-on > rect { fill: #e0eed8; }
+.schematic [data-tip="vstream"].tip-on > rect { fill: #dbe6ff; }
+.schematic .vis-only, .schematic .tstream, .schematic .vstream { transition: opacity .2s; }
+.schematic.follow-text .vis-only, .schematic.follow-text .vstream, .schematic.follow-vision .tstream { opacity: .15; }
+.schematic.follow-vision .vis-only rect { stroke-width: 2.8px; }
 
 .video video { width: 100%; border-radius: 14px; border: 1px solid var(--panel-border); display: block; }
 
@@ -261,6 +269,8 @@ figcaption b { color: var(--ink); }
 .tip-row b { font-variant-numeric: tabular-nums; min-width: 2.6em; }
 .tip-row span:last-child { color: var(--ink-2); }
 .tip-key { display: inline-flex; }
+.tip-title.tip-name { color: var(--ink); font-weight: 700; font-size: 15.5px; }
+.tip-text { max-width: 300px; color: var(--ink-2); }
 
 /* ------------------------------------------------------------------ contents: side list on wide screens, tab bar below */
 .toc .sec, .tabs .sec { color: var(--faint); font-variant-numeric: tabular-nums; margin-right: .45em; }

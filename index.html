@@ -271,13 +271,10 @@
   <p>An encoder's parameters are <em>dedicated</em>, used only by vision tokens, and <em>pre-fusion</em>, run before vision and text interact. To separate the two, we move the encoder's 0.4B-parameter budget <em>in-fusion</em>: into vision-only modules inside the shared backbone.</p>
 
   <figure class="viz wide">
-    <div class="vh">
-      <div>
-        <h4>Two blocks with vision-only modules</h4>
-        <p class="dek">In-fusion vision capacity adds to the shared backbone instead of replacing it.</p>
-      </div>
-      <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button></div>
-    </div>
+    <div class="vh"><div>
+      <h4>Two blocks with vision-only modules</h4>
+      <p class="dek">In-fusion vision capacity adds to the shared backbone instead of replacing it.</p>
+    </div></div>
     <div class="legend center">
       <span class="li"><span class="sw sw-shared"></span>all tokens</span>
       <span class="li"><span class="sw sw-text"></span>text tokens only</span>
@@ -285,10 +282,10 @@
       <span class="li"><span class="sw-n">N</span>norm</span>
     </div>
     <div class="schematics">
-      <div class="sch"><div class="sch-t"><b class="c-inf">In-fusion</b> vision modules add to one shared stream</div><div data-schematic="infusion" data-build></div></div>
-      <div class="sch"><div class="sch-t"><b class="c-mot">MoT</b> separate streams, joint attention</div><div data-schematic="mot" data-build></div></div>
+      <div class="sch"><div class="sch-t"><b class="c-inf">In-fusion</b> vision modules add to one shared stream</div><div data-schematic="infusion"></div></div>
+      <div class="sch"><div class="sch-t"><b class="c-mot">MoT</b> separate streams, joint attention</div><div data-schematic="mot"></div></div>
     </div>
-    <figcaption>Every token passes through the shared modules; vision tokens also pass through vision-only attention projections and an FFN branch whose outputs add to the shared ones, so attention stays joint and text-only inputs are processed exactly as by the shared backbone alone. In-fusion (FFN-only) omits the dashed modules. MoT instead gives each modality its own modules, so the streams meet only in attention.</figcaption>
+    <figcaption>Hover any part to see what it does, or a token to follow its path. Every token passes through the shared modules; vision tokens also pass through vision-only attention projections and an FFN branch whose outputs add to the shared ones, so attention stays joint and text-only inputs are processed exactly as by the shared backbone alone. In-fusion (FFN-only) omits the dashed modules. MoT instead gives each modality its own modules, so the streams meet only in attention.</figcaption>
   </figure>
 
   <p>Where should the budget go, and who should use it? Holding it at 0.4B parameters, we vary both.</p>
