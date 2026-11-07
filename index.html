@@ -281,11 +281,14 @@
   <p>Across budgets, encoder-free trails by 2.4–5.5 Avg. VQA points at 1.7B and 2.8–6.4 at 4B. Is that just the encoder's extra parameters? We give the encoder-free backbone the encoder's 0.4B parameters as extra width, depth, or both.</p>
 
   <figure class="viz wide narrowish">
-    <div class="vh"><div>
-      <h4>Giving encoder-free the encoder's parameters</h4>
-      <p class="dek">Matching total parameters doesn't close the gap.</p>
-    </div></div>
-    <div class="chart" data-chart="steelman"></div>
+    <div class="vh">
+      <div>
+        <h4>Giving encoder-free the encoder's parameters</h4>
+        <p class="dek">Matching total parameters doesn't close the gap.</p>
+      </div>
+      <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button></div>
+    </div>
+    <div class="chart" data-chart="steelman" data-build></div>
     <figcaption>The added parameters help Avg. Text, since text tokens use them too, but move Avg. VQA by at most 1.0 point.</figcaption>
   </figure>
 
@@ -302,18 +305,22 @@
   <p>An encoder's parameters are <em>dedicated</em>, used only by vision tokens, and <em>pre-fusion</em>, run before vision and text interact. To separate the two, we move the encoder's 0.4B-parameter budget <em>in-fusion</em>: into vision-only modules inside the shared backbone.</p>
 
   <figure class="viz wide">
-    <div class="vh"><div>
-      <h4>Two blocks with vision-only modules</h4>
-      <p class="dek">In-fusion vision capacity adds to the shared backbone instead of replacing it.</p>
-    </div></div>
-    <div class="schematics">
-      <div class="sch"><div class="sch-t"><b class="c-inf">In-fusion</b> vision modules add to one shared stream</div><div data-schematic="infusion"></div></div>
-      <div class="sch"><div class="sch-t"><b class="c-mot">MoT</b> separate streams, joint attention</div><div data-schematic="mot"></div></div>
+    <div class="vh">
+      <div>
+        <h4>Two blocks with vision-only modules</h4>
+        <p class="dek">In-fusion vision capacity adds to the shared backbone instead of replacing it.</p>
+      </div>
+      <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button></div>
     </div>
     <div class="legend center">
       <span class="li"><span class="sw sw-shared"></span>all tokens</span>
       <span class="li"><span class="sw sw-text"></span>text tokens only</span>
       <span class="li"><span class="sw sw-vis"></span>vision tokens only</span>
+      <span class="li"><span class="sw-n">N</span>norm</span>
+    </div>
+    <div class="schematics">
+      <div class="sch"><div class="sch-t"><b class="c-inf">In-fusion</b> vision modules add to one shared stream</div><div data-schematic="infusion" data-build></div></div>
+      <div class="sch"><div class="sch-t"><b class="c-mot">MoT</b> separate streams, joint attention</div><div data-schematic="mot" data-build></div></div>
     </div>
     <figcaption>Every token passes through the shared modules; vision tokens also pass through vision-only attention projections and an FFN branch whose outputs add to the shared ones, so attention stays joint and text-only inputs are processed exactly as by the shared backbone alone. In-fusion (FFN-only) omits the dashed modules. MoT instead gives each modality its own modules, so the streams meet only in attention.</figcaption>
   </figure>
@@ -340,7 +347,7 @@
         <h4>In-fusion versus the pre-fusion encoder</h4>
         <p class="dek">In-fusion is comparable to the pre-fusion encoder over training.</p>
       </div>
-      <div class="seg" data-for="fig-inf" role="group" aria-label="Metric"><button data-metric="vqa" aria-pressed="true">Avg. VQA</button><button data-metric="text" aria-pressed="false">Avg. Text</button></div>
+      <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button><div class="seg" data-for="fig-inf" role="group" aria-label="Metric"><button data-metric="vqa" aria-pressed="true">Avg. VQA</button><button data-metric="text" aria-pressed="false">Avg. Text</button></div></div>
     </div>
     <div class="legend">
       <span class="li"><span data-key="encoderFree"></span>Encoder-free</span>
@@ -348,7 +355,7 @@
       <span class="li"><span data-key="infusion"></span>In-fusion</span>
     </div>
     <div class="ytitle" data-ytitle-for="trajInf">Avg. VQA (%)</div>
-    <div class="chart" data-chart="trajInf"></div>
+    <div class="chart" data-chart="trajInf" data-build></div>
     <figcaption>In-fusion ranges from 2.0 Avg. VQA points behind the encoder to 1.8 ahead and stays within one Avg. Text point.</figcaption>
   </figure>
 
@@ -391,11 +398,14 @@
   <h3>Adding vision to a pretrained language model</h3>
   <p>We continue our own 1.7B text-only model from 1T to 1.33T token-equivalents, adding each recipe at equal compute, and include mixture-of-transformers (MoT) for comparison.</p>
   <figure class="viz wide narrowish">
-    <div class="vh"><div>
-      <h4>Mid-training from a pretrained 1.7B text model</h4>
-      <p class="dek">In mid-training, in-fusion, early-layer MoT, and the scratch encoder perform comparably, and all lead encoder-free.</p>
-    </div></div>
-    <div class="chart" data-chart="mid"></div>
+    <div class="vh">
+      <div>
+        <h4>Mid-training from a pretrained 1.7B text model</h4>
+        <p class="dek">In mid-training, in-fusion, early-layer MoT, and the scratch encoder perform comparably, and all lead encoder-free.</p>
+      </div>
+      <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button></div>
+    </div>
+    <div class="chart" data-chart="mid" data-build></div>
     <figcaption>Every recipe stays within a point of a text-only control on Avg. Text (57.3). MetaCLIP's pretraining is not counted.</figcaption>
   </figure>
   <p>The full MoT model falls behind despite having 3.5× as many vision-only parameters: what matters is reserving capacity for vision tokens early.</p>

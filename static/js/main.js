@@ -280,7 +280,7 @@
       rows: g.rows.map((r) => {
         const isEnc = r.key === "scratch";
         return {
-          label: r.label, value: r.vqa, side: f1(r.text),
+          key: r.key, label: r.label, value: r.vqa, side: f1(r.text),
           color: isEnc ? C.enc : (r.key === "encoderFree" ? C.ef : "#f3b95c"), marker: isEnc ? "circle" : "square",
           strong: isEnc || r.key === "encoderFree",
           tip: { title: `${r.label} · ${g.size} · ${r.params} parameters`, rows: [{ value: f1(r.vqa), name: "Avg. VQA (%)" }, { value: f1(r.text), name: "Avg. Text (%)" }] },
@@ -377,8 +377,8 @@
   });
 
   // ------------------------------------------------------------ figure builds
-  /* The first time a chart marked data-build reaches the middle of the screen, its marks land in order (its BUILD
-     story); after that it is the same interactive chart. Every animation starts from hidden or undrawn and ends on the
+  /* The first time a chart or schematic marked data-build reaches the middle of the screen, its marks land in order
+     (its BUILD story); after that it is the same interactive figure. Every animation starts from hidden or undrawn and ends on the
      chart as drawn, so nothing is left behind. Charts in one figure build one after another, and the figure's Replay
      runs them again. */
   const pop = (el, at) => el.animate([{ opacity: 0, transform: "scale(.3)" }, { opacity: 1, transform: "scale(1.15)", offset: 0.65 }, { opacity: 1, transform: "scale(1)" }],
@@ -455,7 +455,30 @@
     return { anims: A, dur: end - at0 };
   };
   BUILD.trajEF = sweepStory(1500);
+  BUILD.trajInf = sweepStory(1500);
   BUILD.ladder = sweepStory(1600);
+  // Table 2: at each backbone size, encoder-free and the scratch encoder land first; then each variant that gives
+  // encoder-free the encoder's parameters starts at encoder-free's score and slides to its own, barely moving
+  BUILD.steelman = (el, at0) => {
+    const A = [], mid = (m) => { const b = m.getBBox(); return b.x + b.width / 2; };
+    let end = at0;
+    const values = (m, t) => {
+      el.querySelectorAll(`[data-b="val"][data-r="${m.dataset.r}"]`).forEach((v) => A.push(fade(v, t, 260)));
+      end = Math.max(end, t + 260);
+    };
+    const groups = [...new Set([...el.querySelectorAll('[data-b="pt"]')].map((m) => m.dataset.g))];
+    groups.forEach((g, gi) => {
+      const pts = [...el.querySelectorAll(`[data-b="pt"][data-g="${g}"]`)], t0 = at0 + 350 * gi;
+      const ef = pts.find((m) => m.dataset.s === "encoderFree"), ends = (m) => m === ef || m.dataset.s === "scratch";
+      pts.filter(ends).forEach((m) => { A.push(pop(m, t0)); values(m, t0 + 200); });
+      pts.filter((m) => !ends(m)).forEach((m, k) => {
+        const t = t0 + 520 + 90 * k;
+        A.push(ef ? slide(m, t, mid(ef) - mid(m)) : pop(m, t));
+        values(m, t + 560);
+      });
+    });
+    return { anims: A, dur: end - at0 };
+  };
   // Table 3: the reference lines, then each row's layer strip fills in, then each score slides to its place from
   // encoder-free's, since every row adds its capacity to the encoder-free backbone
   BUILD.capDesign = (el, at0) => {
@@ -490,16 +513,43 @@
     });
     return { anims: A, dur: end - at0 };
   };
+  // Figure 8: rows land from the bottom (the lowest Avg. VQA) up
+  BUILD.mid = (el, at0) => {
+    const A = [], pts = [...el.querySelectorAll('[data-b="pt"]')], n = pts.length;
+    pts.forEach((m) => {
+      const t = at0 + (n - 1 - m.dataset.r) * 200;
+      A.push(pop(m, t));
+      el.querySelectorAll(`[data-b="val"][data-r="${m.dataset.r}"]`).forEach((v) => A.push(fade(v, t + 150, 300)));
+    });
+    return { anims: A, dur: (n - 1) * 200 + 450 };
+  };
+  // Figure 4a: the vision-only FFN branch adds to the shared block, then the dashed vision-only attention projections
+  // (in-fusion (FFN-only) is the block before that last step)
+  BUILD.infusion = (el, at0) => {
+    const A = [], q = (sel) => el.querySelector(sel);
+    A.push(wipe(q('[data-b="vis"]'), at0 + 100, 650));
+    A.push(wipe(q('[data-b="vis-attn"]'), at0 + 900, 800));
+    return { anims: A, dur: 1700 };
+  };
+  // Figure 4b: the vision stream comes in with its own modules, then joint attention grows to join the two streams
+  BUILD.mot = (el, at0) => {
+    const A = [], q = (sel) => el.querySelector(sel);
+    A.push(wipe(q('[data-b="vstream"]'), at0 + 100, 700));
+    A.push(q('[data-b="joint"]').animate([{ opacity: 0, transform: "scaleY(.2)" }, { opacity: 1, transform: "scaleY(1)" }],
+      { duration: 500, delay: at0 + 900, easing: "cubic-bezier(.3, .7, .3, 1)", fill: "backwards" }));
+    return { anims: A, dur: 1400 };
+  };
+  const story = (el) => BUILD[el.dataset.chart || el.dataset.schematic];
   const running = new Map(); // chart -> its animations
   function build(el, at) {
     (running.get(el) || []).forEach((a) => a.cancel());
     el.classList.remove("pre-build");
-    const { anims, dur } = BUILD[el.dataset.chart](el, at);
+    const { anims, dur } = story(el)(el, at);
     running.set(el, anims);
     return at + dur;
   }
   document.querySelectorAll("figure").forEach((fig) => {
-    const charts = [...fig.querySelectorAll("[data-build]")].filter((el) => BUILD[el.dataset.chart]);
+    const charts = [...fig.querySelectorAll("[data-build]")].filter(story);
     if (!charts.length) return;
     const btn = fig.querySelector(".replay");
     if (reduceMotion || !document.body.animate) { if (btn) btn.hidden = true; return; }

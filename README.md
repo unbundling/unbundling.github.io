@@ -22,7 +22,7 @@ python3 -m http.server 8971 --bind 127.0.0.1
 | Text, section order, captions, links | `index.html` |
 | Every plotted number (each block names its paper figure or table) | `static/js/data.js` |
 | Glyphs, schematics and chart drawing, and the trigger that starts every animated figure once it reaches the middle of the screen | `static/js/viz.js` |
-| Figure assembly, tooltips, toggles, figure builds (a chart's marks land in order the first time it reaches the middle of the screen; each chart's order is its `BUILD` story), the recipe diagram, contents list and tab bar | `static/js/main.js` |
+| Figure assembly, tooltips, toggles, figure builds (every chart's and schematic's marks land in order the first time it reaches the middle of the screen; each one's order is its `BUILD` story), the recipe diagram, contents list and tab bar | `static/js/main.js` |
 | The teaser and §2's protocol grid, drawn frame by frame (each one's timing is its `T` table; each layout table holds a wide variant and a tall one for phones) | `static/js/anim.js` |
 | Colors, type and layout (`:root` holds the paper palette) | `static/css/style.css` |
 | Logos, favicon, social card | `static/img/` |

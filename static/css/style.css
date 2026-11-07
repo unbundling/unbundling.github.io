@@ -166,9 +166,10 @@ figcaption b { color: var(--ink); }
 .viz .vh-tools { flex: none; display: flex; align-items: center; gap: 14px; }
 .viz svg.anim { display: block; width: 100%; height: auto; }
 /* figure builds (main.js): a chart's marks stay hidden until its build starts, then land in order */
-.chart.pre-build [data-b] { opacity: 0; }
+.pre-build [data-b] { opacity: 0; }
 .chart [data-b="pt"] { transform-box: fill-box; transform-origin: center; }
 .chart [data-b="bar"], .chart [data-b="add"] { transform-box: fill-box; transform-origin: 0 50%; }
+.schematic [data-b="joint"] { transform-box: fill-box; transform-origin: center; }
 .tnum { font-variant-numeric: tabular-nums; }
 .hit-row { cursor: default; }
 .hit-row.on { fill: rgba(28, 43, 51, .035); }
@@ -185,9 +186,10 @@ figcaption b { color: var(--ink); }
 .legend .sw { width: 13px; height: 13px; border-radius: 2px; background: var(--c); }
 .legend[hidden] { display: none; }
 .sw { display: inline-block; width: 18px; height: 13px; border-radius: 4px; border: 1.5px solid; }
-.sw-shared { background: #eceef0; border-color: #a9afb7; }
-.sw-text { background: #e6f2df; border-color: #6fb35f; }
-.sw-vis { background: #e3ecff; border-color: #2f70ff; }
+.sw.sw-shared { background: #eceef0; border-color: #a9afb7; }
+.sw.sw-text { background: #e6f2df; border-color: #6fb35f; }
+.sw.sw-vis { background: #e3ecff; border-color: #2f70ff; }
+.sw-n { display: inline-grid; place-items: center; width: 17px; height: 17px; border: 1.4px solid #6d7580; border-radius: 5px; font-size: 11.5px; line-height: 1; color: #3d4651; }
 
 .seg { flex: none; display: inline-flex; border: 1px solid #d5d9de; border-radius: 999px; padding: 2px; background: #f4f5f7; }
 .seg button { border: 0; background: transparent; font: inherit; font-size: 15.5px; color: var(--muted); padding: 4px 14px 3px; border-radius: 999px; cursor: pointer; }

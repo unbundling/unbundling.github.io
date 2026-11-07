@@ -314,7 +314,7 @@
 
   // --------------------------------------------------------------- dot plots
   /* Rows of dots on one value axis (used where values sit in a narrow range, so bars would need a cut axis).
-     spec: { groups:[{title, sub, rows:[{label, sub, icon, value, color, marker, valueText, side, tip, strong}]}],
+     spec: { groups:[{title, sub, rows:[{key, label, sub, icon, value, color, marker, valueText, side, tip, strong}]}],
              x:{domain, ticks, label}, refs:[{value, label, color}], side:{header, fmt}, labelW, iconW } */
   function dotPlot(width, spec) {
     const fs = width < 420 ? 13.5 : 15;
@@ -336,7 +336,7 @@
         y += grp.sub ? fs * 2 + 12 : fs + 9;
       }
       grp.rows.forEach((row) => {
-        const cy = stacked ? y + rowH - 14 : y + rowH / 2, rb = `data-r="${tips.length}"`;
+        const cy = stacked ? y + rowH - 14 : y + rowH / 2, rb = `data-r="${tips.length}" data-g="${gi}"${row.key ? ` data-s="${row.key}"` : ""}`;
         g += `<line x1="${r1(X0)}" x2="${r1(X1)}" y1="${r1(cy)}" y2="${r1(cy)}" stroke="${C.grid}" stroke-width="1"/>`;
         if (stacked) {
           g += T(0, y + fs + 2, row.label, { size: fs, color: row.labelColor || C.ink, weight: row.strong ? 700 : undefined });
@@ -436,10 +436,11 @@
   }
 
   // ------------------------------------------------------------- schematics
+  const token = (x, y, color) => `<rect x="${x}" y="${y - 5}" width="9" height="9" rx="2" fill="${color}"/>`;
   /* Figure 4, redrawn. (a) In-fusion: one shared residual stream; vision-only modules (blue, pink outline) add to the
      shared modules' outputs. (b) MoT: separate text and vision streams that meet only in attention. */
   function infusionBlock(o = {}) {
-    const W = 520, H = 230;
+    const W = 540, H = 230;
     const Y = 54, Yb = 122, Yd = 186;
     const dk = "#6d7580", ink = "#3d4651";
     const ids = { g: nextId("ag"), b: nextId("ab"), k: nextId("ak") };
@@ -449,12 +450,12 @@
     const vbox = (x, y, w, lab, dashed) => `<rect class="vmod${dashed ? " attn" : ""}" x="${x}" y="${y - 17}" width="${w}" height="34" rx="7" fill="${C.encFill}" stroke="${C.inf}" stroke-width="1.8"${dashed ? ' stroke-dasharray="4 3"' : ""}/>` + T(x + w / 2, y + 6, lab, { size: 16, anchor: "middle", weight: 700, color: C.encDark, cls: dashed ? "attn" : "" });
     const norm = (x, y) => `<rect x="${x - 11}" y="${y - 11}" width="22" height="22" rx="6" fill="#fff" stroke="${dk}" stroke-width="1.4"/>` + T(x, y + 4.7, "N", { size: 13.5, anchor: "middle", color: ink });
     const plus = (x, y, blue) => `<circle cx="${x}" cy="${y}" r="10" fill="#fff" stroke="${blue ? C.enc : ink}" stroke-width="1.6"${blue ? ' stroke-dasharray="3 2.5"' : ""}/>` + T(x, y + 5.2, "+", { size: 16, anchor: "middle", weight: 700, color: blue ? C.enc : ink });
-    // stream
+    // stream: a vision and a text token in, the same two out
     g += `<rect x="6" y="${Y - 15}" width="${W - 12}" height="30" rx="15" fill="#f1f2f4"/>`;
-    g += T(W / 2 - 40, Y - 22, "shared residual stream", { size: 14, anchor: "middle", color: C.muted });
+    g += T(220, Y - 22, "shared residual stream", { size: 14, anchor: "middle", color: C.muted });
     g += T(10, Y - 22, "x_{ℓ}", { size: 16.5, weight: 700 }) + T(W - 10, Y - 22, "x_{ℓ+1}", { size: 16.5, weight: 700, anchor: "end" });
-    g += `<rect x="14" y="${Y - 5}" width="9" height="9" rx="2" fill="${C.enc}"/><rect x="25" y="${Y - 5}" width="9" height="9" rx="2" fill="${C.textStroke}"/>`;
-    g += ln(`M36,${Y} L302,${Y}`, ink, false, false, 2.2) + ln(`M322,${Y} L460,${Y}`, ink, false, false, 2.2) + ln(`M480,${Y} L${W - 12},${Y}`, ink, false, true, 2.2);
+    g += token(14, Y, C.enc) + token(25, Y, C.textStroke) + token(W - 32, Y, C.enc) + token(W - 21, Y, C.textStroke);
+    g += ln(`M36,${Y} L302,${Y}`, ink, false, false, 2.2) + ln(`M322,${Y} L460,${Y}`, ink, false, false, 2.2) + ln(`M480,${Y} L${W - 36},${Y}`, ink, false, true, 2.2);
     g += plus(312, Y) + plus(470, Y);
     // attention path
     g += ln(`M52,${Y} L52,${Yb} L68,${Yb}`, dk) + norm(80, Yb) + ln(`M91,${Yb} L106,${Yb}`, dk) + box(108, Yb, 64, "QKV");
@@ -463,15 +464,15 @@
     // ffn path
     g += ln(`M338,${Y} L338,${Yb} L354,${Yb}`, dk) + norm(366, Yb) + ln(`M377,${Yb} L392,${Yb}`, dk) + box(394, Yb, 62, "FFN") + ln(`M456,${Yb} L463,${Yb} L463,${Y + 12}`, dk);
     // vision-only modules
-    g += `<g class="v-attn">` + ln(`M80,${Yb + 11} L80,${Yd} L106,${Yd}`, C.enc, true) + vbox(108, Yd, 64, "ΔQKV", true) + ln(`M172,${Yd} L190,${Yd} L190,${Yb + 12}`, C.enc, true) +
+    g += `<g class="v-attn" data-b="vis-attn">` + ln(`M80,${Yb + 11} L80,${Yd} L106,${Yd}`, C.enc, true) + vbox(108, Yd, 64, "ΔQKV", true) + ln(`M172,${Yd} L190,${Yd} L190,${Yb + 12}`, C.enc, true) +
       ln(`M240,${Yb + 17} L240,${Yd} L276,${Yd}`, C.enc, true) + vbox(278, Yd, 40, "ΔO", true) + ln(`M318,${Yd} L321,${Yd} L321,${Y + 12}`, C.enc, true) + `</g>`;
-    g += ln(`M366,${Yb + 11} L366,${Yd} L392,${Yd}`, C.enc) + vbox(394, Yd, 62, "ΔFFN", false) + ln(`M456,${Yd} L479,${Yd} L479,${Y + 12}`, C.enc);
+    g += `<g data-b="vis">` + ln(`M366,${Yb + 11} L366,${Yd} L392,${Yd}`, C.enc) + vbox(394, Yd, 62, "ΔFFN", false) + ln(`M456,${Yd} L479,${Yd} L479,${Y + 12}`, C.enc) + `</g>`;
     return svgWrap(W, H, g, { fluid: true, label: "In-fusion block: shared modules process every token; vision-only modules add to their outputs for vision tokens", cls: "schematic" });
   }
 
   function motBlock() {
-    const W = 420, H = 230;
-    const Yt = 52, Yv = 176, Ya = 114;
+    const W = 420, H = 198;
+    const ys = 36, Yt = 76, Yv = 120, yv = 160; // text stream, text modules, vision modules, vision stream
     const ink = "#3d4651";
     const ids = { t: nextId("at"), v: nextId("av") };
     const tcol = C.textStroke, vcol = C.enc;
@@ -480,21 +481,22 @@
     const box = (x, y, w, lab, t) => `<rect x="${x}" y="${y - 16}" width="${w}" height="32" rx="7" fill="${t ? C.textFill : C.encFill}" stroke="${t ? tcol : vcol}" stroke-width="1.6"/>` + T(x + w / 2, y + 5.5, lab, { size: 15.5, anchor: "middle", weight: 700, color: t ? C.textDark : C.encDark });
     const norm = (x, y, col) => `<rect x="${x - 10}" y="${y - 10}" width="20" height="20" rx="5.5" fill="#fff" stroke="${col}" stroke-width="1.4"/>` + T(x, y + 4.5, "N", { size: 12.5, anchor: "middle", color: ink });
     const plus = (x, y, col) => `<circle cx="${x}" cy="${y}" r="9" fill="#fff" stroke="${col}" stroke-width="1.6"/>` + T(x, y + 5, "+", { size: 15, anchor: "middle", weight: 700, color: col });
-    // streams
-    g += `<rect x="6" y="${Yt - 26}" width="${W - 12}" height="22" rx="11" fill="#eef6ea"/>` + T(W / 2, Yt - 31, "text residual stream", { size: 13.5, anchor: "middle", color: C.textDark });
-    g += `<rect x="6" y="${Yv + 4}" width="${W - 12}" height="22" rx="11" fill="#eaf0ff"/>` + T(W / 2, Yv + 42, "vision residual stream", { size: 13.5, anchor: "middle", color: C.encDark });
-    const ys = Yt - 15, yv = Yv + 15;
-    g += ln(`M14,${ys} L250,${ys}`, tcol, false, 2.2) + plus(260, ys, tcol) + ln(`M269,${ys} L360,${ys}`, tcol, false, 2.2) + plus(370, ys, tcol) + ln(`M379,${ys} L${W - 12},${ys}`, tcol, true, 2.2);
-    g += ln(`M14,${yv} L250,${yv}`, vcol, false, 2.2) + plus(260, yv, vcol) + ln(`M269,${yv} L360,${yv}`, vcol, false, 2.2) + plus(370, yv, vcol) + ln(`M379,${yv} L${W - 12},${yv}`, vcol, true, 2.2);
-    // per-stream modules
-    [[Yt + 12, tcol, true, ys], [Yv - 12, vcol, false, yv]].forEach(([y, col, t, sy]) => {
-      g += ln(`M26,${sy} L26,${y} L36,${y}`, col) + norm(46, y, col) + ln(`M56,${y} L66,${y}`, col) + box(68, y, 50, "QKV", t) + ln(`M118,${y} L134,${y}`, col);
-      g += ln(`M186,${y} L198,${y}`, col) + box(200, y, 34, "O", t) + ln(`M234,${y} L260,${y} L260,${sy + (t ? 9 : -9)}`, col);
-      g += ln(`M280,${sy} L280,${y} L290,${y}`, col) + norm(300, y, col) + ln(`M310,${y} L320,${y}`, col) + box(322, y, 44, "FFN", t) + ln(`M366,${y} L370,${y} L370,${sy + (t ? 9 : -9)}`, col);
-    });
-    // joint attention
-    g += `<rect x="136" y="${Yt - 2}" width="50" height="${Yv - Yt + 4}" rx="8" fill="${C.shared}" stroke="${C.sharedStroke}" stroke-width="1.6"/>`;
-    g += T(161, Ya + 1, "Attn", { size: 16, anchor: "middle", weight: 700, color: ink }) + T(161, Ya + 18, "joint", { size: 13, anchor: "middle", color: C.muted });
+    // a stream: a token in, two residual adds, the token out
+    const stream = (y, col) => token(12, y, col) + ln(`M22,${y} L250,${y}`, col, false, 2.2) + plus(260, y, col) + ln(`M269,${y} L360,${y}`, col, false, 2.2) + plus(370, y, col) +
+      ln(`M379,${y} L${W - 27},${y}`, col, true, 2.2) + token(W - 22, y, col);
+    const ends = (y) => T(8, y, "x_{ℓ}", { size: 16.5, weight: 700 }) + T(W - 8, y, "x_{ℓ+1}", { size: 16.5, weight: 700, anchor: "end" });
+    const modules = (y, col, t, sy) => ln(`M26,${sy} L26,${y} L36,${y}`, col) + norm(46, y, col) + ln(`M56,${y} L66,${y}`, col) + box(68, y, 50, "QKV", t) + ln(`M118,${y} L134,${y}`, col) +
+      ln(`M186,${y} L198,${y}`, col) + box(200, y, 34, "O", t) + ln(`M234,${y} L260,${y} L260,${sy + (t ? 9 : -9)}`, col) +
+      ln(`M280,${sy} L280,${y} L290,${y}`, col) + norm(300, y, col) + ln(`M310,${y} L320,${y}`, col) + box(322, y, 44, "FFN", t) + ln(`M366,${y} L370,${y} L370,${sy + (t ? 9 : -9)}`, col);
+    // text stream and its modules
+    g += `<rect x="6" y="${ys - 11}" width="${W - 12}" height="22" rx="11" fill="#eef6ea"/>` + T(W / 2, ys - 17, "text residual stream", { size: 13.5, anchor: "middle", color: C.textDark }) + ends(ys - 17);
+    g += stream(ys, tcol) + modules(Yt, tcol, true, ys);
+    // vision stream and its modules
+    g += `<g data-b="vstream"><rect x="6" y="${yv - 11}" width="${W - 12}" height="22" rx="11" fill="#eaf0ff"/>` + T(W / 2, yv + 31, "vision residual stream", { size: 13.5, anchor: "middle", color: C.encDark }) + ends(yv + 31) +
+      stream(yv, vcol) + modules(Yv, vcol, false, yv) + `</g>`;
+    // joint attention, spanning the two rows of modules
+    g += `<g data-b="joint"><rect x="136" y="${Yt - 18}" width="50" height="${Yv - Yt + 36}" rx="8" fill="${C.shared}" stroke="${C.sharedStroke}" stroke-width="1.6"/>` +
+      T(161, (Yt + Yv) / 2 + 5.5, "Attn", { size: 16, anchor: "middle", weight: 700, color: ink }) + `</g>`;
     return svgWrap(W, H, g, { fluid: true, label: "Mixture-of-transformers block: separate text and vision streams that interact only through joint attention", cls: "schematic" });
   }
 
