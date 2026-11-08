@@ -665,6 +665,16 @@
     });
   });
   document.addEventListener("pointerdown", (ev) => { if (pinned && !pinned.contains(ev.target)) { pinned = null; unpoint(); } }, true);
+  // a tooltip explains what is under the pointer, so scrolling clears it and its marks (some browsers send no
+  // pointerleave when the page scrolls under a still pointer)
+  window.addEventListener("scroll", () => {
+    if (!tip.classList.contains("on")) return;
+    pinned = null;
+    unpoint();
+    document.querySelectorAll(".hit-row.on").forEach((h) => h.classList.remove("on"));
+    document.querySelectorAll(".chart .xh").forEach((x) => x.setAttribute("opacity", 0));
+    document.querySelectorAll(".chart g.hl").forEach((g) => { g.innerHTML = ""; });
+  }, { passive: true });
   document.querySelectorAll("[data-glyph]").forEach((el) => {
     el.innerHTML = V.glyph(el.dataset.glyph, { height: +(el.dataset.h || 40) });
   });
