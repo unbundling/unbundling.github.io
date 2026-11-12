@@ -43,6 +43,8 @@
 html { scroll-behavior: smooth; scroll-padding-top: calc(var(--tabs-h) + 20px); }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 html.static *, html.static *::before, html.static *::after { transition: none !important; }
+/* reduced motion: no hover or state fades either, as with ?static */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
 body {
   margin: 0; background: #fff; color: var(--ink);
   font-family: var(--serif); font-size: 19px; line-height: 1.6;
@@ -51,10 +53,12 @@ body {
 /* links: ink text over a quiet teal rule that fills in on hover */
 a { color: var(--ink); text-decoration: none; background-image: linear-gradient(var(--accent), var(--accent)), linear-gradient(var(--link-line), var(--link-line)); background-size: 0 2px, 100% 1px; background-position: 0 100%, 0 100%; background-repeat: no-repeat; transition: background-size .28s cubic-bezier(.2, .7, .3, 1), color .15s; }
 a:hover { background-size: 100% 2px, 100% 1px; }
-a.plain, .btn, .jump, .toc a, .tabs a, .hanchor, .foot a, .au a { background-image: none; }
+a.plain, .btn, .toc a, .tabs a, .hanchor, .foot a, .au a { background-image: none; }
 b, strong { font-weight: 700; }
 sup { line-height: 0; }
 p { text-wrap: pretty; }
+/* keeps a hyphenated term (in-fusion) from breaking across lines in a heading */
+.nw { white-space: nowrap; }
 
 .page { max-width: calc(var(--col) + 48px); margin: 0 auto; padding: 0 24px; }
 .wide { width: min(var(--wide), calc(100vw - 40px)); position: relative; left: 50%; transform: translateX(-50%); }
@@ -85,7 +89,8 @@ p { text-wrap: pretty; }
 .logos .logo-nyu { height: 38px; }
 .notes { font-size: 16px; color: var(--muted); margin: 4px 0 18px; }
 .notes sup { font-size: .8em; }
-.notes span { white-space: nowrap; }
+/* two footnotes side by side, centered, each kept on one line */
+.notes span { white-space: nowrap; display: inline-block; margin: 0 .4em; }
 
 .buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .btn {
@@ -123,10 +128,11 @@ p { text-wrap: pretty; }
 /* ------------------------------------------------------------------ summary + key message */
 .summary { margin: 34px 0 0; }
 .summary ul { list-style: none; padding: 0; margin: 0; }
-.summary li { position: relative; padding-left: 24px; margin: 0 0 14px; }
+.summary li { position: relative; padding-left: 24px; margin: 0 0 14px; text-wrap: pretty; }
 .summary li::before { content: ""; position: absolute; left: 5px; top: .72em; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
-.jump { font-size: 15.5px; color: var(--faint); white-space: nowrap; margin-left: 2px; }
-.jump:hover { color: var(--accent-d); }
+/* section links at the end of each summary point: teal text over the page's link rule, which fills in on hover */
+.jump { font-size: 16.5px; color: var(--accent-d); white-space: nowrap; }
+.jump:hover { color: var(--accent); }
 .key {
   margin: 26px 0 8px; background: var(--accent); color: #fff; border-radius: 14px; padding: 20px 28px 21px;
   text-align: center; font-size: 23px; line-height: 1.38; box-shadow: 0 1px 0 rgba(0, 0, 0, .04);
@@ -139,7 +145,13 @@ p { text-wrap: pretty; }
 section { margin-top: 72px; }
 section.summary { margin-top: 34px; }
 .kicker { font-size: 14.5px; letter-spacing: .12em; text-transform: uppercase; color: #737b85; margin: 0 0 4px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.kicker .swap { display: inline-flex; align-items: center; gap: 7px; letter-spacing: 0; text-transform: none; color: var(--faint); font-size: 16px; }
+/* the section number, set apart by space (no separator) */
+.kicker .sec { margin-right: .7em; }
+/* §3–§5 kickers ask the section's question, styled like the teaser's question lines: teal number, dark semibold text */
+.kicker.kq { font-size: 19px; line-height: 1.35; letter-spacing: 0; text-transform: none; color: var(--ink); font-weight: 600; margin-bottom: 6px; }
+.kicker.kq .sec { color: var(--accent-d); margin-right: .45em; }
+.kicker > span:first-child { min-width: 0; }
+.kicker .swap { flex: none; display: inline-flex; align-items: center; gap: 7px; letter-spacing: 0; text-transform: none; color: var(--faint); font-size: 16px; }
 .kicker .swap .g { line-height: 0; }
 .kicker .swap .g.from { opacity: .45; }
 h2 { font-size: 34px; line-height: 1.18; margin: 0 0 10px; font-weight: 700; letter-spacing: -0.005em; text-wrap: balance; }
@@ -147,19 +159,22 @@ h2 .hanchor { margin-left: 10px; font-size: .6em; font-weight: 400; color: var(-
 h2:hover .hanchor, h2 .hanchor:focus-visible { opacity: 1; }
 h2 .hanchor:hover { color: var(--accent-d); }
 h3 { font-size: 24px; margin: 40px 0 8px; font-weight: 700; text-wrap: balance; }
-h4 { font-size: 18.5px; margin: 0 0 5px; font-weight: 700; }
+h4 { font-size: 18.5px; margin: 0 0 5px; font-weight: 700; text-wrap: balance; }
 p { margin: 0 0 16px; hyphens: manual; }
-.question { font-style: italic; color: var(--muted); font-size: 20px; margin: -2px 0 14px; }
 .metrics { font-size: 17px; color: var(--ink-2); margin: 16px 0 0; }
+/* a term that lists its benchmarks (main.js: benchmark terms) */
+.bench { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline dotted; text-decoration-color: var(--faint); text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.bench:hover, .bench[aria-expanded="true"] { text-decoration-color: currentColor; }
+.bench:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 
 /* ------------------------------------------------------------------ figures: title, finding, legend, chart, caption */
 figure { margin: 34px 0 38px; }
 .viz .vh { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px 22px; }
-.viz .vh h4 { font-size: 20px; line-height: 1.3; margin: 0 0 3px; text-wrap: balance; }
-.viz .dek { font-size: 17px; line-height: 1.45; color: var(--muted); margin: 0 0 14px; text-wrap: pretty; }
+.viz .vh h4 { font-size: 20px; line-height: 1.3; margin: 0 0 12px; text-wrap: balance; }
 .viz .ytitle { font-size: 15.5px; color: var(--ink); margin: 10px 0 0; }
-figcaption { font-size: 16px; line-height: 1.52; color: var(--muted); margin: 14px 0 0; max-width: var(--col); }
-figcaption b { color: var(--ink); }
+/* a caption opens with the figure's point in bold, then the details (the paper's caption style) */
+figcaption { font-size: 16px; line-height: 1.52; color: var(--muted); margin: 14px 0 0; max-width: var(--col); text-wrap: pretty; }
+figcaption b { color: var(--ink); font-weight: 700; }
 .chart { width: 100%; }
 .chart svg { display: block; overflow: visible; }
 .chart text, .bundle text, .schematic text, .glyph text, .anim text { font-family: var(--serif); }
@@ -195,7 +210,8 @@ figcaption b { color: var(--ink); }
 .seg button[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(28, 43, 51, .14); }
 
 /* schematics */
-.schematics { display: grid; grid-template-columns: 1.27fr 1fr; gap: 30px; align-items: start; }
+/* main.js sets the columns (and, stacked, each schematic's width) from the drawings' widths, so both draw at one scale */
+.schematics { display: grid; grid-template-columns: var(--sch-cols, 1.27fr 1fr); gap: 30px; align-items: start; }
 .sch-t { font-size: 17px; color: var(--ink-2); margin: 0 0 6px; }
 .sch svg { width: 100%; height: auto; display: block; }
 /* pointing at a part explains it (main.js); pointing at a token dims what that token skips */
@@ -213,7 +229,7 @@ figcaption b { color: var(--ink); }
 /* takeaways: the paper's takeaway box (thin teal frame, Teal100 at 15% fill, 4pt corners) */
 .takeaway {
   margin: 30px 0 0; border: 1px solid var(--accent); background: #f3fbfa; border-radius: 5px;
-  padding: 13px 20px 14px; font-size: 18.5px; line-height: 1.55;
+  padding: 13px 20px 14px; font-size: 18.5px; line-height: 1.55; text-wrap: pretty;
 }
 .takeaway > b { display: block; margin-bottom: 2px; }
 
@@ -230,7 +246,6 @@ figcaption b { color: var(--ink); }
 .recipes { border-collapse: separate; border-spacing: 0; font-size: 17px; width: 100%; }
 .recipes th { font-size: 15px; font-weight: 400; color: var(--muted); text-align: center; padding: 0 6px 8px; white-space: nowrap; }
 .recipes th:first-child { text-align: left; padding-left: 10px; }
-.th-n { display: block; font-size: 13.5px; color: var(--faint); font-style: italic; }
 .recipes td { padding: 9px 6px; text-align: center; border-top: 1px solid var(--rule); }
 .recipes td:first-child { text-align: left; white-space: nowrap; padding-left: 10px; font-weight: 700; }
 .recipes td:first-child .g { display: inline-block; vertical-align: middle; width: 78px; margin-right: 9px; line-height: 0; }
@@ -243,6 +258,18 @@ figcaption b { color: var(--ink); }
 .recipes tr.sel td:first-child { border-radius: 10px 0 0 10px; }
 .recipes tr.sel td:last-child { border-radius: 0 10px 10px 0; }
 .recipes tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* FAQ: collapsible questions between rules, as in the recipe table; the chevron turns when an answer opens */
+.faq { margin: 18px 0 0; border-bottom: 1px solid var(--rule); }
+.faq details { border-top: 1px solid var(--rule); }
+.faq summary { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 13px 2px; cursor: pointer; list-style: none; font-weight: 700; line-height: 1.4; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: ""; flex: none; width: 8px; height: 8px; margin-right: 4px; border-right: 1.8px solid var(--faint); border-bottom: 1.8px solid var(--faint); transform: translateY(-3px) rotate(45deg); transition: transform .2s, border-color .15s; }
+.faq details[open] > summary::after { transform: translateY(2px) rotate(-135deg); }
+.faq summary:hover::after { border-color: var(--accent); }
+.faq summary:focus { outline: none; }
+.faq summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.faq details > p { margin: -3px 0 17px; padding-right: 30px; font-size: 18px; line-height: 1.55; color: var(--ink-2); }
 
 /* citation */
 .bib { position: relative; }
@@ -271,6 +298,35 @@ figcaption b { color: var(--ink); }
 .tip-key { display: inline-flex; }
 .tip-title.tip-name { color: var(--ink); font-weight: 700; font-size: 15.5px; }
 .tip-text { max-width: 300px; color: var(--ink-2); }
+/* a benchmark list takes the pointer while it is open, so its links can be clicked (main.js sets .live) */
+.tip.pin, .tip.live { pointer-events: auto; }
+/* links drawn inside an SVG figure (viz.js rich: [label](url)), underlined like the page's links */
+.anim a.cite { background: none; text-decoration: underline; text-decoration-thickness: 1px; cursor: pointer; }
+.anim a.cite:hover { fill: var(--accent-d); }
+.tip-group { margin-top: 6px; }
+.tip-cat { font-size: 13.5px; color: var(--muted); }
+.tip-list { color: var(--ink-2); }
+.tip-list a { color: inherit; white-space: nowrap; }
+.tip-list a:hover { color: var(--ink); }
+.tip-list a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 2px; }
+.tip-foot { margin-top: 7px; font-size: 13.5px; color: var(--faint); }
+/* training-data examples (§2 metrics): a strip of images, the picked image's caption, then text excerpts */
+.tip.wide { max-width: min(500px, calc(100vw - 16px)); }
+.tip-data .tip-cat { margin-top: 10px; }
+.tip-data .tip-cat + .ex-txt { margin-top: 2px; }
+.ex-strip { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin: 5px 0 8px; }
+.ex-sel { display: grid; grid-template-columns: 124px 1fr; gap: 11px; align-items: start; }
+.ex-sel img { width: 124px; height: 124px; border-radius: 5px; display: block; }
+@media (max-width: 600px) { .ex-sel { grid-template-columns: 96px 1fr; } .ex-sel img { width: 96px; height: 96px; } }
+.ex-thumb { padding: 0; border: 2px solid transparent; border-radius: 6px; background: none; cursor: pointer; line-height: 0; }
+.ex-thumb img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 4px; display: block; }
+.ex-thumb[aria-pressed="true"] { border-color: var(--accent); }
+.ex-thumb:focus-visible, .ex-next:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ex-cap { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-2); height: 124px; overflow-y: auto; }
+.ex-txt { height: 7.4em; margin-top: 2px; }
+.ex-tier { margin-top: 3px; }
+.ex-next { font: inherit; font-size: 13.5px; color: var(--muted); background: none; border: 0; padding: 2px 0 0; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+.ex-next:hover { color: var(--ink); }
 
 /* ------------------------------------------------------------------ contents: side list on wide screens, tab bar below */
 .toc .sec, .tabs .sec { color: var(--faint); font-variant-numeric: tabular-nums; margin-right: .45em; }
@@ -279,6 +335,8 @@ figcaption b { color: var(--ink); }
 .tabs { position: sticky; top: 0; z-index: 20; background: rgba(255, 255, 255, .96); backdrop-filter: blur(6px); border-bottom: 1px solid var(--rule); margin: 0 -24px; padding: 0 24px; }
 .tabs ol { list-style: none; margin: 0; padding: 0; display: flex; gap: 22px; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
 .tabs ol::-webkit-scrollbar { display: none; }
+/* the right-edge fade hints at more tabs, so it goes once the bar is scrolled to its end (main.js sets .at-end) */
+.tabs ol.at-end { -webkit-mask-image: none; mask-image: none; }
 .tabs li { flex: none; }
 .tabs a { display: block; white-space: nowrap; padding: 12px 0 10px; border-bottom: 2px solid transparent; font-size: 16px; color: var(--ink-2); }
 .tabs a:hover { color: var(--ink); }
@@ -295,6 +353,9 @@ figcaption b { color: var(--ink); }
   .toc ol { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--rule-2); }
   .toc a { display: block; color: var(--muted); padding: 5px 0 5px 14px; margin-left: -2px; border-left: 2px solid transparent; transition: color .15s, border-color .15s; }
   .toc .sec { display: inline-block; min-width: 2.35em; margin-right: 0; }
+  /* a label that wraps (Beyond lifetime compute) continues under its first word, not under the § number */
+  .toc a:not(.sub) { padding-left: calc(14px + 2.35em); text-indent: -2.35em; }
+  .toc .sec { text-indent: 0; }
   .toc ol ol { border-left: 0; }
   .toc a.sub { padding-left: calc(14px + 2.35em); padding-top: 2px; font-size: 14.5px; }
   /* a hooked arrow (down, then right) marks the one nested entry */
@@ -314,6 +375,7 @@ figcaption b { color: var(--ink); }
   .ytitle.spacer { display: none; }
   .bundle-grid { grid-template-columns: 1fr; }
   .schematics { grid-template-columns: 1fr; }
+  .sch svg { width: calc(100% * var(--sch-w, 1)); }
 }
 @media (max-width: 600px) {
   body { font-size: 17.5px; }
@@ -326,16 +388,24 @@ figcaption b { color: var(--ink); }
   .btn { justify-content: center; font-size: 16.5px; }
   h2 { font-size: 28px; }
   .kicker { font-size: 13.5px; }
+  .kicker.kq { font-size: 17px; }
+  /* recipe glyphs are wider than tall; drawn a little smaller, the pair stays on the kicker's line */
+  .kicker .swap { gap: 5px; }
+  .kicker .swap svg { height: 17px; width: auto; }
   .viz .vh { flex-wrap: wrap; }
   .viz .vh h4 { font-size: 18.5px; }
-  .viz .dek { font-size: 16px; }
   figcaption { font-size: 15px; }
   .legend { font-size: 15px; }
   .key { font-size: 19px; padding: 16px 18px; }
   .takeaway { font-size: 16.5px; padding: 11px 14px 12px; }
+  .faq details > p { font-size: 16.5px; padding-right: 0; }
   .recipes { font-size: 14px; }
   .recipes th { padding: 0 3px 6px; font-size: 12.5px; }
   .recipes td { padding: 7px 3px; }
   .recipes td:first-child { padding-left: 6px; }
-  .recipes td:first-child .g { width: 46px; margin-right: 5px; }
+  .recipes td:first-child .g { width: 56px; margin-right: 5px; }
+}
+/* the recipe table's glyphs share one width, so the B's line up; the smallest phones get narrower ones to keep the table on screen */
+@media (max-width: 370px) {
+  .recipes td:first-child .g { width: 46px; }
 }

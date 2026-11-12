@@ -25,7 +25,11 @@
   // one decimal, rounding half up on the decimal value (56.65 -> 56.7, as in the paper's tables)
   const f1 = (v) => (Math.round(v * 10 + 1e-6) / 10).toFixed(1);
   const tag = V.tag;
-  function showTip(ev, content) {
+  // at: the pointer event the tooltip follows, or for a pinned one an element's box (it opens below the box, or above it
+  // when there is no room below)
+  function showTip(ev, content, at) {
+    // a chart or schematic taking over the tooltip closes a benchmark list
+    if (!at && termOpen) { tip.classList.remove("pin", "live"); termOpen.setAttribute("aria-expanded", "false"); termOpen = null; }
     tip.textContent = "";
     if (content.title) {
       const t = document.createElement("div");
@@ -56,14 +60,68 @@
       row.appendChild(n);
       tip.appendChild(row);
     });
+    // groups: named lists of items, each item a name with an optional link
+    (content.groups || []).forEach((gr) => {
+      const box = document.createElement("div");
+      box.className = "tip-group";
+      const h = document.createElement("div");
+      h.className = "tip-cat";
+      h.textContent = gr.title;
+      box.appendChild(h);
+      const list = document.createElement("div");
+      list.className = "tip-list";
+      gr.items.forEach(([name, href], k) => {
+        if (k) list.appendChild(document.createTextNode(", "));
+        const a = document.createElement(href ? "a" : "span");
+        if (href) a.href = href;
+        a.textContent = name;
+        list.appendChild(a);
+      });
+      box.appendChild(list);
+      tip.appendChild(box);
+    });
+    // node: ready-made content, such as the training-data examples
+    if (content.node) tip.appendChild(content.node);
+    tip.classList.toggle("wide", !!content.wide);
+    if (content.foot) {
+      const f = document.createElement("div");
+      f.className = "tip-foot";
+      f.textContent = content.foot;
+      tip.appendChild(f);
+    }
     tip.classList.add("on");
+    placeTip(ev, at);
+  }
+  function placeTip(ev, at) {
     const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
-    let x = ev.clientX + pad, y = ev.clientY + pad;
-    if (x + w > window.innerWidth - 8) x = ev.clientX - w - pad;
-    if (y + h > window.innerHeight - 8) y = ev.clientY - h - pad;
+    let x, y;
+    if (at) {
+      x = Math.max(8, Math.min(at.left, window.innerWidth - w - 8));
+      y = at.bottom + h + 6 > window.innerHeight - 8 && at.top - h - 6 > 8 ? at.top - h - 6 : at.bottom + 6;
+    } else {
+      x = ev.clientX + pad; y = ev.clientY + pad;
+      if (x + w > window.innerWidth - 8) x = ev.clientX - w - pad;
+      if (y + h > window.innerHeight - 8) y = ev.clientY - h - pad;
+    }
     tip.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
   }
-  const hideTip = () => tip.classList.remove("on");
+  let termOpen = null; // the benchmark term (§2) whose list the tooltip shows
+  const hideTip = () => {
+    tip.classList.remove("on", "pin", "live");
+    if (termOpen) { termOpen.setAttribute("aria-expanded", "false"); termOpen = null; }
+  };
+  // unpoint clears the tooltip and every mark it explains: chart cross-hairs, rings and rows, and schematic parts. A
+  // touch keeps its tooltip (pinned) until the next touch elsewhere or a scroll, since touch sends pointerleave as soon
+  // as the finger lifts.
+  let pinned = null;
+  const unpoint = () => {
+    document.querySelectorAll(".schematic .tip-on").forEach((g) => g.classList.remove("tip-on"));
+    document.querySelectorAll(".schematic").forEach((svg) => svg.classList.remove("follow-vision", "follow-text"));
+    document.querySelectorAll(".hit-row.on").forEach((h) => h.classList.remove("on"));
+    document.querySelectorAll(".chart .xh").forEach((x) => x.setAttribute("opacity", 0));
+    document.querySelectorAll(".chart g.hl").forEach((g) => { g.innerHTML = ""; });
+    hideTip();
+  };
 
   // ------------------------------------------------------- responsive mount
   function mount(el, draw) {
@@ -107,7 +165,7 @@
         const rows = [];
         let ring = "";
         m.series.forEach((s) => {
-          const q = s.pts.find((p) => Math.abs(p[0] - best.x) < 0.8);
+          const q = s.pts.find((p) => Math.abs(p[0] - best.x) < (m.tol || 0.8));
           if (!q) return;
           rows.push({ v: q[3], value: m.yfmt(q[3]), name: s.name, color: s.color, marker: s.marker, dash: s.dash });
           ring += V.marker(s.marker, q[0], q[1], 6.6, s.color, { sw: 2.6 });
@@ -117,8 +175,8 @@
         showTip(ev, { title: m.xinfo ? m.xinfo(best.xv) : "", rows });
       };
       hit.addEventListener("pointermove", move);
-      hit.addEventListener("pointerdown", move);
-      hit.addEventListener("pointerleave", () => { xh.setAttribute("opacity", 0); hl.innerHTML = ""; hideTip(); });
+      hit.addEventListener("pointerdown", (ev) => { move(ev); pinned = ev.pointerType === "mouse" ? null : hit; });
+      hit.addEventListener("pointerleave", (ev) => { if (ev.pointerType === "mouse") { xh.setAttribute("opacity", 0); hl.innerHTML = ""; hideTip(); } });
     });
   }
 
@@ -128,8 +186,8 @@
       if (!t) return;
       const move = (ev) => { hit.classList.add("on"); showTip(ev, t); };
       hit.addEventListener("pointermove", move);
-      hit.addEventListener("pointerdown", move);
-      hit.addEventListener("pointerleave", () => { hit.classList.remove("on"); hideTip(); });
+      hit.addEventListener("pointerdown", (ev) => { move(ev); pinned = ev.pointerType === "mouse" ? null : hit; });
+      hit.addEventListener("pointerleave", (ev) => { if (ev.pointerType === "mouse") { hit.classList.remove("on"); hideTip(); } });
     });
   }
 
@@ -146,6 +204,7 @@
       const fig = document.getElementById(seg.dataset.for);
       fig.dataset.metric = b.dataset.metric;
       fig.querySelectorAll("[data-chart]").forEach((c) => c._render && c._render());
+      if (fig._build) fig._build(); // a chart not yet built builds now rather than staying blank
     });
   });
 
@@ -162,7 +221,7 @@
   // Figure 2a: share of a fixed lifetime budget spent on encoder pretraining
   FIG.upstream = (w, el) => {
     const m = metricOf("fig-prior"), U = D.upstreamShare;
-    const yd = m === "vqa" ? [36, 44] : [50, 56];
+    const yd = m === "vqa" ? [42, 50] : [50, 56];
     const ref = U.scratch[m];
     const series = U.series.map((s) => ({
       key: s.key, name: s.name, color: RC[s.key].color, marker: RC[s.key].marker,
@@ -174,7 +233,7 @@
       minPanelW: 240, height: priorH(w), margin: { l: 40, r: 16, t: 16, b: 52 },
       panels: [{
         x: { domain: [-0.35, 4.35], ticks: U.shares.map((s, i) => [i, s === 0 ? "0" : String(s)]), label: "Share of budget on encoder pretraining (%)" },
-        y: { domain: yd, ticks: m === "vqa" ? [36, 38, 40, 42, 44] : [50, 52, 54, 56], label: metricLabel(m) },
+        y: { domain: yd, ticks: m === "vqa" ? [42, 44, 46, 48, 50] : [50, 52, 54, 56], label: metricLabel(m) },
         series,
         ann: [{ type: "hline", y: ref, color: C.enc, label: "scratch encoder", labelX: 4.3, labelDy: -6, labelColor: C.encDark }],
         xinfo: (i) => (i === 0 ? "No separate pretraining" : `${U.shares[i]}% of the ${U.budget.replace("^22", "²²")}-FLOP budget on pretraining`),
@@ -183,7 +242,9 @@
   };
 
   // Figure 7: longer (free) MetaCLIP pretraining raises ImageNet accuracy but not VQA.
-  // Drawn at the height of the Figure 2a chart beside it; the compute bars' key is the HTML legend above.
+  // Drawn at the height of the Figure 2a chart beside it; the compute bars' key is the HTML legend above. As in the
+  // paper, the compute bars are right-aligned: every row's multimodal block ends in one column, and its pretraining
+  // extends to the left of it.
   FIG.free = (w, el) => {
     const F = D.freePretraining;
     const rows = F.rows.slice().reverse(); // most pretraining on top, scratch at the bottom (as in the paper)
@@ -199,8 +260,8 @@
     const rowH = (bottom - top) / rows.length;
     const yOf = (i) => top + i * rowH + rowH / 2;
     let g = "";
-    // row labels
-    g += V.T(labelW - 6, top - 16, "×10^{21}", { size: fs - 1.5, anchor: "end", color: C.faint });
+    // row labels (their unit heads the compute bars when they show, else the labels themselves)
+    if (!showBars) g += V.T(labelW - 6, top - 16, "×10^{21}", { size: fs - 1.5, anchor: "end", color: C.faint });
     rows.forEach((r, i) => {
       g += V.T(labelW - 6, yOf(i) + fs * .34, r.label, { size: fs, anchor: "end", color: r.pre ? C.preDark : C.encDark, weight: 700 });
       if (r.note) g += V.T(labelW - 6, yOf(i) + fs * .34 + fs, r.note, { size: fs - 2.5, anchor: "end", color: C.faint, italic: true });
@@ -208,12 +269,14 @@
     let x0 = labelW + 4;
     // compute bars
     if (showBars) {
-      const sx = V.scale([0, 12], [x0, x0 + barW]), bh = Math.min(22, rowH * 0.5);
-      g += V.T(x0, top - 34, "Compute", { size: fs, weight: 700 }) + V.T(x0, top - 16, "FLOPs", { size: fs - 1.5, color: C.faint });
+      const xr = x0 + barW, px = barW / 12, bh = Math.min(22, rowH * 0.5);
+      g += V.T(xr, top - 34, "Compute", { size: fs, weight: 700, anchor: "end" }) + V.T(xr, top - 16, "×10^{21} FLOPs", { size: fs - 1.5, color: C.faint, anchor: "end" });
+      // each row's bar grows leftward from the right-hand column, as one piece
       rows.forEach((r, i) => {
-        const y = yOf(i) - bh / 2;
-        if (r.pre) g += `<rect data-b="bar" data-r="${i}" x="${V.r1(sx(0))}" y="${V.r1(y)}" width="${V.r1(sx(r.pre) - sx(0) - 1)}" height="${V.r1(bh)}" fill="${C.pre}"/>`;
-        g += `<rect data-b="bar" data-r="${i}" x="${V.r1(sx(r.pre))}" y="${V.r1(y)}" width="${V.r1(sx(r.pre + F.multimodal) - sx(r.pre))}" height="${V.r1(bh)}" rx="2" fill="#c3c8ce"/>`;
+        const y = yOf(i) - bh / 2, xm = xr - F.multimodal * px;
+        g += `<g data-b="bar" data-r="${i}" style="transform-origin: 100% 50%">`;
+        if (r.pre) g += `<rect x="${V.r1(xm - r.pre * px)}" y="${V.r1(y)}" width="${V.r1(r.pre * px - 1)}" height="${V.r1(bh)}" fill="${C.pre}"/>`;
+        g += `<rect x="${V.r1(xm)}" y="${V.r1(y)}" width="${V.r1(F.multimodal * px)}" height="${V.r1(bh)}" rx="2" fill="#c3c8ce"/></g>`;
       });
       x0 += barW + gap;
     }
@@ -239,7 +302,7 @@
       return p;
     };
     g += panel("ImageNet probe (%)", "after pretraining", "imagenet", [79.5, 86], [80, 82, 84]);
-    g += panel("Avg. VQA (%)", "after all training", "vqa", [35.6, 39.8], [36, 37, 38, 39]);
+    g += panel("Avg. VQA (%)", "after all training", "vqa", [40.7, 43.9], [41, 42, 43]);
     const tips = rows.map((r) => ({
       title: r.pre ? `MetaCLIP pretrained with ${r.label}×10²¹ FLOPs` : "Encoder trained from scratch",
       rows: [...(r.imagenet != null ? [{ value: f1(r.imagenet), name: "ImageNet linear probe (%)" }] : []), { value: f1(r.vqa), name: "Avg. VQA (%)" }, { value: "2.7×10²¹", name: "multimodal FLOPs (same for every row)" }],
@@ -253,8 +316,8 @@
     const m = metricOf(figId);
     const sizes = ["1.7B", "4B"];
     const dom = { "1.7B": [0.56, 15.4], "4B": [2.45, 34.2] };
-    const yd = m === "vqa" ? { "1.7B": [28, 45], "4B": [35, 51] } : { "1.7B": [44, 57], "4B": [50, 62] };
-    const yt = m === "vqa" ? { "1.7B": [30, 35, 40, 45], "4B": [35, 40, 45, 50] } : { "1.7B": [45, 50, 55], "4B": [50, 55, 60] };
+    const yd = m === "vqa" ? { "1.7B": [30, 50], "4B": [40, 56] } : { "1.7B": [44, 57], "4B": [50, 62] };
+    const yt = m === "vqa" ? { "1.7B": [30, 35, 40, 45, 50], "4B": [40, 45, 50, 55] } : { "1.7B": [45, 50, 55], "4B": [50, 55, 60] };
     return Object.assign(V.lineChart(w, {
       label: `${m === "vqa" ? "Average VQA" : "Average text"} score over lifetime compute`,
       minPanelW: 250, height: Math.min(320, Math.max(256, w * 0.39)), margin: { l: 40, r: 16, t: 30, b: 52 },
@@ -271,7 +334,7 @@
           x: { domain: dom[sz], log: true, ticks: xFlops(dom[sz][0], dom[sz][1]), label: "Lifetime FLOPs" },
           y: { domain: yd[sz], ticks: yt[sz], label: metricLabel(m), always: false },
           series, ann,
-          xinfo: (x) => `${plainFlops(x * 1e21)} FLOPs · ${S.tpp[S.x.indexOf(x)]} tokens per parameter`,
+          xinfo: (x) => `${plainFlops(x * 1e21)} FLOPs`,
         };
       }),
     }), { ytitle: metricLabel(m) });
@@ -280,26 +343,32 @@
   FIG.trajInf = (w) => trajectory(w, "fig-inf", D.trajectories.fig5, ["encoderFree", "scratch", "infusion"], false);
 
   // Table 2: encoder-free with the encoder's parameters added to its backbone
-  // Each variant row shows the gap from encoder-free to the scratch encoder as a track, filled as far as the variant gets.
+  // Avg. VQA is the main panel; Avg. Text gets its own smaller panel on the right, with the same row markers (on phones,
+  // a value beside each row's label). The key above names the three markers.
+  const EF_PLUS = "#f3b95c";
   FIG.steelman = (w) => {
     const groups = D.steelman.map((g) => ({
-      title: `${g.size} backbone`, sub: `${g.flops} FLOPs · ${g.tpp} tokens per parameter`,
+      title: `${g.size} backbone`, sub: `${g.flops} FLOPs`,
       rows: g.rows.map((r) => {
-        const isEnc = r.key === "scratch", ef = g.rows.find((q) => q.key === "encoderFree").vqa, sc = g.rows.find((q) => q.key === "scratch").vqa;
-        const variant = r.key !== "scratch" && r.key !== "encoderFree";
+        const isEnc = r.key === "scratch";
         return {
-          key: r.key, label: r.label, value: r.vqa, side: f1(r.text), track: variant ? [ef, sc] : null, from: variant ? ef : null,
-          color: isEnc ? C.enc : (r.key === "encoderFree" ? C.ef : "#f3b95c"), marker: isEnc ? "circle" : "square",
+          key: r.key, label: r.label, value: r.vqa, value2: r.text,
+          color: isEnc ? C.enc : (r.key === "encoderFree" ? C.ef : EF_PLUS), marker: isEnc ? "circle" : "square",
           strong: isEnc || r.key === "encoderFree",
-          tip: { title: `${r.label} · ${g.size} · ${r.params} parameters`, rows: [{ value: f1(r.vqa), name: "Avg. VQA (%)" }, { value: f1(r.text), name: "Avg. Text (%)" }] },
+          tip: { title: `${r.label} (${g.size} backbone, ${r.params} parameters)`, rows: [{ value: f1(r.vqa), name: "Avg. VQA (%)" }, { value: f1(r.text), name: "Avg. Text (%)" }] },
         };
       }),
     }));
     return V.dotPlot(w, {
-      label: "Encoder-free variants with the encoder's parameters added versus the scratch encoder",
+      label: "Encoder-free variants with the encoder's parameters added versus the scratch encoder, on Avg. VQA and Avg. Text",
       groups, labelW: 190, labelWNarrow: 160, rowH: 33,
-      x: { domain: [33.5, 46.5], ticks: [34, 36, 38, 40, 42, 44, 46], label: "Avg. VQA (%)" },
-      side: { header: "Avg. Text" },
+      x: { domain: [36, 52.5], ticks: [36, 38, 40, 42, 44, 46, 48, 50, 52], label: "Avg. VQA (%)" },
+      second: { domain: [48.5, 59.5], ticks: [50, 54, 58], label: "Avg. Text (%)", short: "Avg. Text" },
+      legend: [
+        { name: "Encoder-free", color: C.ef, marker: "square" },
+        { name: "Encoder-free + the encoder's parameters", color: EF_PLUS, marker: "square" },
+        { name: "Scratch encoder", color: C.enc, marker: "circle" },
+      ],
     });
   };
 
@@ -311,13 +380,13 @@
       rows: g.rows.map((r) => ({
         label: r.label, value: r.vqa, side: f1(r.text), icon: V.layerStrip(r.pattern),
         color: r.users === "vision" ? C.infFFN : "#9aa1ab", marker: r.users === "vision" ? "tri-up" : "circle", strong: !!r.best,
-        tip: { title: `${r.label} · ${r.users === "vision" ? "vision tokens only" : "all tokens"}`, rows: [{ value: f1(r.vqa), name: "Avg. VQA (%)" }, { value: f1(r.ocr), name: "OCR & chart VQA (%)" }, { value: f1(r.text), name: "Avg. Text (%)" }] },
+        tip: { title: `${r.label}, used by ${r.users === "vision" ? "vision tokens only" : "all tokens"}`, rows: [{ value: f1(r.vqa), name: "Avg. VQA (%)" }, { value: f1(r.ocr), name: "OCR & chart VQA (%)" }, { value: f1(r.text), name: "Avg. Text (%)" }] },
       })),
     }));
     return V.dotPlot(w, {
       label: "Added capacity by who uses it and where it sits",
       groups, labelW: 200, labelWNarrow: 184, iconW: 122, hideIconsNarrow: true, rowH: 33,
-      x: { domain: [31, 41], ticks: [31, 33, 35, 37, 39, 41], label: "Avg. VQA (%)" },
+      x: { domain: [34, 46], ticks: [34, 36, 38, 40, 42, 44, 46], label: "Avg. VQA (%)" },
       refs: [
         { key: "encoderFree", value: CD.refs.encoderFree.vqa, label: "encoder-free", color: C.ef, labelColor: C.efDark, anchor: "end", dx: 4 },
         { key: "scratch", value: CD.refs.scratch.vqa, label: "scratch encoder", color: C.enc, labelColor: C.encDark, anchor: "end", dx: 4 },
@@ -329,8 +398,8 @@
   // Figure 6: per-recipe laws on the backbone-size ladder
   FIG.ladder = (w) => {
     const L = D.ladder, keys = ["encoderFree", "scratch", "infusion"];
-    const xdom = [5.86e20, 3.9e22];
-    const xt = [[1e21, "10^{21}"], [3e21, "3×10^{21}"], [1e22, "10^{22}"], [3e22, "3×10^{22}"]];
+    const xdom = [2.93e20, 1.95e22];
+    const xt = [[1e21, "10^{21}"], [3e21, "3×10^{21}"], [1e22, "10^{22}"]];
     const mk = (metric) => {
       const isV = metric === "vqa";
       const vals = isV ? L.vqa : L.caption, curves = isV ? L.vqaCurves : L.captionCurves;
@@ -340,13 +409,13 @@
         series.push({ key: k, name: RC[k].name, color: RC[k].color, marker: RC[k].marker, points: L.x.map((x, i) => [x, vals[k][i]]), line: false, r: 4.8 });
       });
       const ann = vals.multipliers.map((M) => ({ type: "arrow", from: [M.to / 1.04, M.y], to: [M.from * 1.04, M.y], label: M.label, prefer: isV ? "right" : "left" }));
-      if (isV) L.sizes.forEach((s, i) => ann.push({ type: "text", x: L.x[i], y: 26.7, text: s, anchor: "middle", size: 13, color: C.faint }));
+      if (isV) L.sizes.forEach((s, i) => ann.push({ type: "text", x: L.x[i], y: 24.7, text: s, anchor: "middle", size: 13, color: C.faint }));
       return {
         title: isV ? "Avg. VQA (%)" : "Held-out caption loss", subtitle: isV ? "higher is better" : "lower is better",
         x: { domain: xdom, log: true, ticks: xt, label: "Lifetime compute (FLOPs)" },
-        y: isV ? { domain: [25, 53], ticks: [25, 30, 35, 40, 45, 50], label: "" } : { domain: [0.79, 1.27], log: true, ticks: [0.8, 0.9, 1.0, 1.1, 1.2], label: "", fmt: (v) => f1(v), tipFmt: (v) => v.toFixed(3) },
+        y: isV ? { domain: [23, 55], ticks: [30, 35, 40, 45, 50, 55], label: "" } : { domain: [0.76, 1.41], log: true, ticks: [0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4], label: "", fmt: (v) => f1(v), tipFmt: (v) => v.toFixed(3) },
         series, ann, ascending: !isV,
-        xinfo: (x) => `${L.sizes[L.x.findIndex((v) => Math.abs(v / x - 1) < 0.01)] || ""} backbone · ${plainFlops(x)} FLOPs`,
+        xinfo: (x) => `${L.sizes[L.x.findIndex((v) => Math.abs(v / x - 1) < 0.01)] || ""} backbone, ${plainFlops(x)} FLOPs`,
       };
     };
     const out = V.lineChart(w, { label: "Per-recipe scaling laws from 1B to 6.4B backbones", minPanelW: 320, height: Math.min(330, Math.max(260, w * 0.37)), margin: { l: 40, r: 14, t: 30, b: 52 }, panels: [mk("vqa"), mk("caption")] });
@@ -354,7 +423,7 @@
     return out;
   };
 
-  // Figure 8: mid-training from a pretrained text-only model
+  // Figure 8: midtraining from a pretrained text-only model
   FIG.mid = (w) => {
     const M = D.midtraining;
     const rows = M.rows.map((r) => {
@@ -366,19 +435,40 @@
       };
     });
     return V.dotPlot(w, {
-      label: "Mid-training: average VQA by recipe after continuing a pretrained 1.7B text model",
+      label: "Midtraining: average VQA by recipe after continuing a pretrained 1.7B text model",
       groups: [{ rows }], labelW: 218, labelWNarrow: 204, rowH: 34,
-      x: { domain: [35, 46], ticks: [35, 37, 39, 41, 43, 45], label: "Avg. VQA (%)" },
+      x: { domain: [38, 52], ticks: [38, 40, 42, 44, 46, 48, 50, 52], label: "Avg. VQA (%)" },
       refs: [{ key: "encoderFree", value: M.rows.find((r) => r.key === "encoderFree").vqa, label: "encoder-free", color: C.ef, labelColor: C.efDark, anchor: "start", dx: -4 }],
       side: { header: "Avg. Text" },
     });
   };
 
-  // Figure 9: time to first token
-  FIG.ttft = (w) => V.stackedBars(w, {
-    label: "Time to first token by recipe", labelW: 190, max: 108, prefill: D.ttft.prefill,
-    groups: D.ttft.groups, ticks: [0, 20, 40, 60, 80, 100], xlabel: "Time to first token (ms), lower is better",
-  });
+  // Figure 9: time to first token added over encoder-free, at budgets matched to MoT copies of the first k layers
+  FIG.ttft = (w) => {
+    const T9 = D.ttft, keys = ["scratch", "infusion", "infusionFFN", "motEarly"]; // MoT last, so its squares sit on top
+    const name = { motEarly: "MoT (first k layers)" };
+    const series = keys.map((k) => ({ key: k, name: name[k] || RC[k].name, color: RC[k].color, marker: RC[k].marker, points: T9.series[k], r: 4.8 }));
+    const mot = T9.series.motEarly, narrow = w < 480;
+    // MoT's k beside each of its points, placed clear of the other lines (as in the paper)
+    const kPos = [[-0.035, -1, "end"], [0, -13, "middle"], [0.03, -12, "start"], [-0.03, 10, "end"], [-0.03, 9, "end"], [-0.03, 8, "end"]];
+    const ann = [{ type: "hline", y: 0, color: C.ef, label: `Encoder-free (${Math.round(T9.encoderFree)} ms)`, labelColor: C.efDark, labelDy: -7 }];
+    mot.forEach((q, i) => ann.push({ type: "text", x: q[0] + kPos[i][0], y: q[1] + kPos[i][1], text: String(T9.k[i]), anchor: kPos[i][2], size: narrow ? 12 : 13, color: C.motDark }));
+    const out = V.lineChart(w, {
+      label: "Time to first token added over encoder-free, by vision-only parameters", height: Math.min(340, Math.max(280, w * 0.48)), margin: { l: 44, r: 14, t: 30, b: 52 },
+      panels: [{
+        title: "Added time to first token (ms)", subtitle: "lower is better",
+        x: { domain: [0, 1.45], ticks: [[0, "0"], [0.25, "0.25"], [0.5, "0.5"], [0.75, "0.75"], [1, "1.0"], [1.25, "1.25"]].filter((t, i) => !narrow || i % 2 === 0), label: "Vision-only parameters (B)" },
+        y: { domain: [-6, 172], ticks: [0, 50, 100, 150], label: "", tipFmt: (v) => `+${Math.round(v)} ms` },
+        series, ann, hoverTol: 9,
+        xinfo: (x) => {
+          const i = mot.reduce((b, q, j) => (Math.abs(q[0] - x) < Math.abs(mot[b][0] - x) ? j : b), 0);
+          return `≈${mot[i][0].toFixed(2)}B vision-only parameters (MoT copies of the first ${T9.k[i]} layers)`;
+        },
+      }],
+    });
+    out.meta[0].ascending = true;
+    return out;
+  };
 
   document.querySelectorAll("[data-chart]").forEach((el) => {
     const f = FIG[el.dataset.chart];
@@ -389,7 +479,8 @@
   /* The first time a chart marked data-build reaches the middle of the screen, its marks land in order (its BUILD
      story); after that it is the same interactive chart. Every animation starts from hidden or undrawn and ends on the
      chart as drawn, so nothing is left behind. Charts in one figure build one after another, and the figure's Replay
-     runs them again. */
+     runs them again. A chart the reader skips past builds when they come back to it; one still building when scrolled
+     past is finished, unseen. A metric toggle starts a build that hasn't run. */
   const pop = (el, at) => el.animate([{ opacity: 0, transform: "scale(.3)" }, { opacity: 1, transform: "scale(1.15)", offset: 0.65 }, { opacity: 1, transform: "scale(1)" }],
     { duration: 380, delay: at, easing: "ease-out", fill: "backwards" });
   const fade = (el, at, dur = 380) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: dur, delay: at, easing: "ease-out", fill: "backwards" });
@@ -497,8 +588,8 @@
     });
     return { anims: A, dur: end - at0 };
   };
-  // Table 2: per backbone size, encoder-free and the scratch encoder land; then each variant row's track shows the gap
-  // between them, and the variant fills only a little of it
+  // Table 2: per backbone size, encoder-free and the scratch encoder land; then each variant slides out from
+  // encoder-free's place, in both panels (Avg. VQA and Avg. Text)
   BUILD.steelman = (el, at0) => {
     const A = [], mid = (m) => { const b = m.getBBox(); return b.x + b.width / 2; };
     let end = at0;
@@ -510,11 +601,13 @@
     groups.forEach((g, gi) => {
       const pts = [...el.querySelectorAll(`[data-b="pt"][data-g="${g}"]`)], t0 = at0 + 300 * gi;
       const ef = pts.find((m) => m.dataset.s === "encoderFree"), ends = (m) => m === ef || m.dataset.s === "scratch";
-      pts.filter(ends).forEach((m) => { A.push(pop(m, t0)); values(m.dataset.r, t0 + 200); });
+      const second = (m) => el.querySelector(`[data-b="pt2"][data-r="${m.dataset.r}"]`), ef2 = second(ef);
+      pts.filter(ends).forEach((m) => { A.push(pop(m, t0)); if (second(m)) A.push(pop(second(m), t0)); values(m.dataset.r, t0 + 200); });
       pts.filter((m) => !ends(m)).forEach((m, k) => {
         const r = m.dataset.r, t = t0 + 450 + 90 * k, q = (b) => el.querySelector(`[data-b="${b}"][data-r="${r}"]`);
         if (q("track")) A.push(wipe(q("track"), t, 420));
         A.push(slide(m, t + 520, mid(ef) - mid(m)));
+        if (second(m) && ef2) A.push(slide(second(m), t + 520, mid(ef2) - mid(second(m))));
         if (q("fill")) A.push(grow(q("fill"), t + 650, 520));
         values(r, t + 1150);
       });
@@ -539,21 +632,11 @@
     });
     return { anims: A, dur: end - at0 };
   };
-  // Figure 9: the backbone prefill every recipe shares, then each recipe's added vision time grows at one speed, so the
-  // quickest finishes first
+  // Figure 9: encoder-free's baseline first; then a sweep draws each design's added time from the smallest budget up
   BUILD.ttft = (el, at0) => {
-    const q = (sel) => [...el.querySelectorAll(sel)], A = [];
-    q('[data-b="bar"]').forEach((b) => A.push(grow(b, at0 + 30 * +b.dataset.r, 450)));
-    q('[data-b="ref"]').forEach((r) => A.push(fade(r, at0 + 250, 400)));
-    const t0 = at0 + 750;
-    let end = t0;
-    q('[data-b="add"]').forEach((b) => {
-      const d = +b.dataset.v * 28; // 28 ms of animation per ms of added time
-      A.push(d ? grow(b, t0, d, "linear") : fade(b, t0, 200));
-      q(`[data-b="val"][data-r="${b.dataset.r}"]`).forEach((v) => A.push(fade(v, t0 + d, 260)));
-      end = Math.max(end, t0 + d + 260);
-    });
-    return { anims: A, dur: end - at0 };
+    const A = [...el.querySelectorAll('[data-b="ref"]')].map((r) => fade(r, at0, 400));
+    const s = sweepStory(1500)(el, at0 + 400);
+    return { anims: A.concat(s.anims), dur: 400 + s.dur };
   };
   // Figure 8: encoder-free and its reference line land first; then every other recipe starts at encoder-free's score
   // and slides to its own, from the bottom row up, showing what dedicated capacity adds
@@ -572,11 +655,14 @@
   };
   const story = (el) => BUILD[el.dataset.chart];
   const running = new Map(); // chart -> its animations
+  const watched = new Set(); // charts that finish their build once scrolled past
   function build(el, at) {
     (running.get(el) || []).forEach((a) => a.cancel());
     el.classList.remove("pre-build");
     const { anims, dur } = story(el)(el, at);
     running.set(el, anims);
+    // a build still running when the reader scrolls past the chart jumps to its end, unseen
+    if (!watched.has(el)) { watched.add(el); V.whenPassed(el, () => { watched.delete(el); (running.get(el) || []).forEach((a) => a.finish()); }); }
     return at + dur;
   }
   document.querySelectorAll("figure").forEach((fig) => {
@@ -586,15 +672,17 @@
     if (reduceMotion || !document.body.animate) { if (btn) btn.hidden = true; return; }
     let freeAt = 0; // when the figure's last build ends, on the performance.now() clock
     const started = new Set();
+    const start = (el) => {
+      if (started.has(el)) return;
+      started.add(el);
+      const now = performance.now(), at = Math.max(0, freeAt - 250 - now);
+      freeAt = now + build(el, at);
+    };
     charts.forEach((el) => {
       el.classList.add("pre-build");
-      V.whenCentered(el, () => {
-        if (started.has(el)) return;
-        started.add(el);
-        const now = performance.now(), at = Math.max(0, freeAt - 250 - now);
-        freeAt = now + build(el, at);
-      });
+      V.whenCentered(el, () => start(el));
     });
+    fig._build = () => charts.forEach(start);
     if (btn) btn.addEventListener("click", () => {
       charts.forEach((el) => started.add(el));
       let at = 0;
@@ -606,6 +694,13 @@
   // schematics + glyphs
   document.querySelectorAll("[data-schematic]").forEach((el) => {
     el.innerHTML = el.dataset.schematic === "infusion" ? V.infusionBlock() : V.motBlock();
+  });
+  // the schematics draw at one scale: side by side, their columns split the row in proportion to their widths; stacked,
+  // each takes that share of the widest one's width
+  document.querySelectorAll(".schematics").forEach((grid) => {
+    const schs = [...grid.querySelectorAll(".sch")], ws = schs.map((el) => el.querySelector("svg").viewBox.baseVal.width);
+    grid.style.setProperty("--sch-cols", ws.map((w) => `${w}fr`).join(" "));
+    schs.forEach((el, i) => el.style.setProperty("--sch-w", ws[i] / Math.max(...ws)));
   });
 
   // ------------------------------------------------------------ schematics: what each part does
@@ -621,7 +716,7 @@
       norm: ["Norm", "Normalizes each token's hidden state before the module."],
       qkv: ["Shared attention projections", "Queries, keys and values for every token, from weights all tokens share."],
       dplus: ["Vision-only add", "For vision tokens, adds the vision-only projections to the shared ones."],
-      attn: ["Joint attention", "Every token attends to vision and text tokens alike; attention itself stays shared."],
+      attn: ["Joint attention", "Every token attends to vision and text tokens alike. Attention itself stays shared."],
       o: ["Shared output projection", "Projects attention's output for every token."],
       ffn: ["Shared FFN", "The feed-forward network every token goes through."],
       dqkv: ["Vision-only attention projections", "Added to the shared queries, keys and values for vision tokens only. In-fusion (FFN-only) leaves these out."],
@@ -631,25 +726,19 @@
     mot: {
       tstream: ["Text residual stream", "Text tokens keep their own stream, with no weights shared with vision."],
       vstream: ["Vision residual stream", "Vision tokens keep their own stream, with their own copy of every module."],
-      text: ["Text token", "Uses only the text modules; it meets vision tokens only in attention."],
-      vision: ["Vision token", "Uses only the vision modules; it meets text tokens only in attention."],
+      text: ["Text token", "Uses only the text modules and meets vision tokens only in attention."],
+      vision: ["Vision token", "Uses only the vision modules and meets text tokens only in attention."],
       out: ["Layer output", "Each stream passes its tokens on to the next layer."],
       add: ["Residual add", "Adds the module's output back into its own stream."],
-      norm: ["Norm", "Normalizes each token's hidden state; each modality has its own."],
+      norm: ["Norm", "Normalizes each token's hidden state. Each modality has its own."],
       tqkv: ["Text attention projections", "Queries, keys and values for text tokens, from text-only weights."],
       vqkv: ["Vision attention projections", "Queries, keys and values for vision tokens, from vision-only weights."],
-      joint: ["Joint attention", "The only place the two streams meet: every token attends to text and vision tokens alike."],
+      joint: ["Joint attention", "The two streams meet only here, where every token attends to text and vision tokens alike."],
       to: ["Text output projection", "Projects attention's output for text tokens."],
       vo: ["Vision output projection", "Projects attention's output for vision tokens."],
       tffn: ["Text FFN", "A feed-forward network only text tokens use."],
       vffn: ["Vision FFN", "A feed-forward network only vision tokens use."],
     },
-  };
-  let pinned = null;
-  const unpoint = () => {
-    document.querySelectorAll(".schematic .tip-on").forEach((g) => g.classList.remove("tip-on"));
-    document.querySelectorAll(".schematic").forEach((svg) => svg.classList.remove("follow-vision", "follow-text"));
-    hideTip();
   };
   document.querySelectorAll("[data-schematic]").forEach((el) => {
     const svg = el.querySelector("svg"), parts = PART[el.dataset.schematic];
@@ -667,16 +756,141 @@
   document.addEventListener("pointerdown", (ev) => { if (pinned && !pinned.contains(ev.target)) { pinned = null; unpoint(); } }, true);
   // a tooltip explains what is under the pointer, so scrolling clears it and its marks (some browsers send no
   // pointerleave when the page scrolls under a still pointer)
+  // (a benchmark list stays with its term while the term is on screen; focusing the term may scroll it into view)
   window.addEventListener("scroll", () => {
     if (!tip.classList.contains("on")) return;
+    if (termOpen) {
+      const r = termOpen.getBoundingClientRect();
+      if (r.bottom > 0 && r.top < window.innerHeight) { placeTip(null, r); return; }
+    }
     pinned = null;
     unpoint();
-    document.querySelectorAll(".hit-row.on").forEach((h) => h.classList.remove("on"));
-    document.querySelectorAll(".chart .xh").forEach((x) => x.setAttribute("opacity", 0));
-    document.querySelectorAll(".chart g.hl").forEach((g) => { g.innerHTML = ""; });
   }, { passive: true });
+
+  // ------------------------------------------------------------ benchmark terms (§2 metrics)
+  /* "16 Cambrian benchmarks" and "12 language benchmarks" list their benchmarks by category, as the paper's appendix
+     tables do (tab:appx:vqa-benchmarks, tab:appx:language-benchmarks), each linked to its paper. Pointing at a term
+     shows the list below it, and the list stays open while the pointer moves onto it, so its links work without a
+     click. A tap, Enter or Space pins the list open; Tab moves through its links, Escape closes it. */
+  const AX = (id) => `https://arxiv.org/abs/${id}`;
+  const BENCH = {
+    vqa: { title: "Avg. VQA, by category", groups: [
+      { title: "General", items: [["MME-P", AX("2306.13394")], ["MMBench-EN", AX("2307.06281")], ["SEED-Bench", AX("2307.16125")], ["GQA", AX("1902.09506")]] },
+      { title: "Knowledge", items: [["ScienceQA (image)", AX("2209.09513")], ["MMMU", AX("2311.16502")], ["MathVista", AX("2310.02255")], ["AI2D", AX("1603.07396")]] },
+      { title: "OCR and chart", items: [["ChartQA", AX("2203.10244")], ["OCRBench", AX("2305.07895")], ["TextVQA", AX("1904.08920")], ["DocVQA", AX("2007.00398")]] },
+      { title: "Vision-centric", items: [["MMVP", AX("2401.06209")], ["RealWorldQA", "https://x.ai/news/grok-1.5v"], ["CV-Bench-2D", AX("2406.16860")], ["CV-Bench-3D", AX("2406.16860")]] },
+    ] },
+    text: { title: "Avg. Text, by category", groups: [
+      { title: "Commonsense reasoning", items: [["COPA", "https://cdn.aaai.org/ocs/2418/2418-10878-1-PB.pdf"], ["HellaSwag", AX("1905.07830")], ["PIQA", AX("1911.11641")], ["Social IQa", AX("1904.09728")], ["WinoGrande", AX("1907.10641")]] },
+      { title: "Science question answering", items: [["ARC-Easy", AX("1803.05457")], ["ARC-Challenge", AX("1803.05457")], ["OpenBookQA", AX("1809.02789")]] },
+      { title: "Broad knowledge", items: [["MMLU (57 subjects)", AX("2009.03300")]] },
+      { title: "Reading comprehension", items: [["BoolQ", AX("1905.10044")], ["RACE-middle", AX("1704.04683")], ["RACE-high", AX("1704.04683")]] },
+    ] },
+  };
+  /* "text and 224×224 image–text pairs" (§2 metrics) shows real training examples the same way: pick an image to read
+     its caption, and step through text excerpts. The examples sit in <template id="data-examples"> as real HTML, so
+     the preview build inlines their images. */
+  const dataTpl = document.getElementById("data-examples");
+  function dataNode() {
+    const box = document.createElement("div");
+    box.className = "tip-data";
+    const head = (t) => { const h = document.createElement("div"); h.className = "tip-cat"; h.textContent = t; box.appendChild(h); };
+    const figs = [...dataTpl.content.querySelectorAll("figure.ex-img")];
+    head(dataTpl.dataset.imgHead);
+    const strip = document.createElement("div");
+    strip.className = "ex-strip";
+    // the picked image, larger, beside its caption
+    const sel = document.createElement("div");
+    sel.className = "ex-sel";
+    const big = document.createElement("img");
+    big.alt = "";
+    const cap = document.createElement("p");
+    cap.className = "ex-cap";
+    sel.append(big, cap);
+    const pick = (k) => {
+      strip.querySelectorAll("button").forEach((t, j) => t.setAttribute("aria-pressed", String(j === k)));
+      big.src = figs[k].querySelector("img").getAttribute("src");
+      cap.textContent = figs[k].querySelector("figcaption").textContent;
+    };
+    figs.forEach((f, k) => {
+      const t = document.createElement("button");
+      t.type = "button";
+      t.className = "ex-thumb";
+      t.setAttribute("aria-label", `Image ${k + 1} of ${figs.length}`);
+      t.appendChild(f.querySelector("img").cloneNode());
+      ["pointerenter", "focus", "click"].forEach((e) => t.addEventListener(e, () => pick(k)));
+      strip.appendChild(t);
+    });
+    box.appendChild(strip);
+    box.appendChild(sel);
+    pick(0);
+    const texts = [...dataTpl.content.querySelectorAll(".ex-text")];
+    if (texts.length) {
+      head(dataTpl.dataset.textHead);
+      const q = document.createElement("p");
+      q.className = "ex-cap ex-txt";
+      const nav = document.createElement("button");
+      nav.type = "button";
+      nav.className = "ex-next";
+      const tier = document.createElement("div");
+      tier.className = "tip-foot ex-tier";
+      let i = 0;
+      const show = () => {
+        q.textContent = texts[i].textContent.trim();
+        tier.textContent = texts[i].dataset.tier;
+        nav.textContent = `Next excerpt (${i + 1} of ${texts.length})`;
+      };
+      nav.addEventListener("click", () => { i = (i + 1) % texts.length; show(); });
+      show();
+      box.appendChild(q);
+      box.appendChild(tier);
+      box.appendChild(nav);
+    }
+    return box;
+  }
+  if (dataTpl) BENCH.data = { title: dataTpl.dataset.title, wide: true, build: dataNode, keyFoot: "Press Enter to browse the examples." };
+  const links = () => [...tip.querySelectorAll("a, button")];
+  // a hover-opened list closes shortly after the pointer leaves both the term and the list, so the pointer can cross
+  // the gap between them
+  let closeT = 0;
+  const keepOpen = () => { clearTimeout(closeT); closeT = 0; };
+  const closeSoon = () => { keepOpen(); closeT = setTimeout(() => { if (termOpen && !tip.classList.contains("pin")) unpoint(); }, 280); };
+  tip.addEventListener("pointerenter", (ev) => { if (ev.pointerType === "mouse" && termOpen) keepOpen(); });
+  tip.addEventListener("pointerleave", (ev) => { if (ev.pointerType === "mouse" && termOpen && !tip.classList.contains("pin")) closeSoon(); });
+  document.querySelectorAll("button.bench").forEach((b) => {
+    const B = BENCH[b.dataset.bench];
+    const open = (pin, foot) => {
+      unpoint();
+      showTip(null, { title: B.title, groups: B.groups, node: B.build && B.build(), wide: B.wide, foot: pin ? null : foot }, b.getBoundingClientRect());
+      termOpen = b;
+      tip.classList.add("live");
+      if (pin) { tip.classList.add("pin"); b.setAttribute("aria-expanded", "true"); }
+    };
+    const isPinned = () => termOpen === b && tip.classList.contains("pin");
+    b.addEventListener("pointerenter", (ev) => { if (ev.pointerType !== "mouse" || isPinned()) return; keepOpen(); if (termOpen !== b) open(false); });
+    b.addEventListener("pointerleave", (ev) => { if (ev.pointerType === "mouse" && !isPinned() && termOpen === b) closeSoon(); });
+    b.addEventListener("focus", () => { if (b.matches(":focus-visible") && !isPinned()) open(false, B.keyFoot || "Press Enter to follow the links."); });
+    b.addEventListener("blur", (ev) => { if (termOpen === b && !isPinned() && !tip.contains(ev.relatedTarget)) unpoint(); });
+    b.addEventListener("click", (ev) => {
+      if (isPinned()) { unpoint(); return; }
+      open(true);
+      if (ev.detail === 0 && links().length) links()[0].focus(); // from the keyboard: into the list
+    });
+    b.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && termOpen === b) unpoint(); });
+  });
+  // inside a pinned list: Escape, or tabbing past either end, closes it and returns to its term
+  tip.addEventListener("keydown", (ev) => {
+    if (!termOpen) return;
+    const L = links(), back = () => { const b = termOpen; ev.preventDefault(); unpoint(); b.focus(); };
+    if (ev.key === "Escape") back();
+    else if (ev.key === "Tab" && ((!ev.shiftKey && document.activeElement === L[L.length - 1]) || (ev.shiftKey && document.activeElement === L[0]))) back();
+  });
+  tip.addEventListener("focusout", (ev) => { if (termOpen && !tip.contains(ev.relatedTarget) && ev.relatedTarget !== termOpen) unpoint(); });
+  // a press anywhere but the term or its list closes a pinned list
+  document.addEventListener("pointerdown", (ev) => { if (termOpen && !termOpen.contains(ev.target) && !tip.contains(ev.target)) unpoint(); }, true);
+  // the recipe table stacks its glyphs, so they share one width and their backbones and B's line up
   document.querySelectorAll("[data-glyph]").forEach((el) => {
-    el.innerHTML = V.glyph(el.dataset.glyph, { height: +(el.dataset.h || 40) });
+    el.innerHTML = V.glyph(el.dataset.glyph, { height: +(el.dataset.h || 40), align: !!el.closest("#recipes") });
   });
   document.querySelectorAll("[data-key]").forEach((el) => {
     const k = el.dataset.key;
@@ -686,15 +900,18 @@
 
   // ------------------------------------------------------------ bundle diagram
   /* One glyph that morphs between the four recipes: pills (dedicated capacity) change color when the prior is dropped,
-     disappear for encoder-free, and slide into the backbone for in-fusion. */
+     disappear for encoder-free, and slide into the backbone for in-fusion. The backbone box and its B stay put in every
+     recipe; in-fusion's pills fit in the box's left part, clear of the B, as in the recipe glyphs. Text tokens enter the
+     box from below, under its B. */
   const bundleEl = document.getElementById("bundle");
   if (bundleEl) {
     const W = 492, H = 276, cy = 134;
+    const BX = 226, BW = 254; // the backbone box, the same in every recipe, with its B at the center
     const S = {
-      pretrained: { fill: C.preLight, stroke: C.pre, op: 1, pw: 25, ph: 66, px: 88, pg: 8, a1: 80, c0: 173, c1: 226, bd: 200, bx: 226, bw: 254, Bx: 353, keep: [1, 1, 1] },
-      scratch: { fill: C.encLight, stroke: C.enc, op: 1, pw: 25, ph: 66, px: 88, pg: 8, a1: 80, c0: 173, c1: 226, bd: 200, bx: 226, bw: 254, Bx: 353, keep: [0, 1, 1] },
-      free: { fill: C.encLight, stroke: C.enc, op: 0, pw: 14, ph: 30, px: 186, pg: 5, a1: 62, c0: 62, c1: 226, bd: 213, bx: 226, bw: 254, Bx: 353, keep: [0, 0, 0] },
-      infusion: { fill: C.encLight, stroke: C.enc, op: 1, pw: 21, ph: 52, px: 124, pg: 7, a1: 62, c0: 62, c1: 108, bd: 94, bx: 108, bw: 372, Bx: 404, keep: [0, 1, 0] },
+      pretrained: { fill: C.preLight, stroke: C.pre, op: 1, pw: 25, ph: 66, px: 88, pg: 8, bd: 200, keep: [1, 1, 1] },
+      scratch: { fill: C.encLight, stroke: C.enc, op: 1, pw: 25, ph: 66, px: 88, pg: 8, bd: 200, keep: [0, 1, 1] },
+      free: { fill: C.encLight, stroke: C.enc, op: 0, pw: 14, ph: 30, px: 186, pg: 5, bd: 213, keep: [0, 0, 0] },
+      infusion: { fill: C.encLight, stroke: C.enc, op: 1, pw: 21, ph: 56, px: 240, pg: 7, bd: 213, keep: [0, 1, 0] },
     };
     const ah = V.nextId("bah");
     bundleEl.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="A vision encoder glyph that morphs between the four recipes">
@@ -703,11 +920,11 @@
         <path d="M15,${cy + 22} L27,${cy + 2} L35,${cy + 12} L41,${cy + 5} L51,${cy + 22} z" fill="#b7bcc3"/><circle cx="44" cy="${cy - 14}" r="5" fill="#c9cdd2"/></g>
       <line class="b-a" y1="${cy}" y2="${cy}" stroke="#9aa1ab" stroke-width="5" stroke-linecap="round"/>
       <line class="b-c" y1="${cy}" y2="${cy}" stroke="#9aa1ab" stroke-width="5" stroke-linecap="round"/>
-      <rect class="b-box" y="${cy - 45}" height="90" rx="20" fill="#fff" stroke="#3a4048" stroke-width="3"/>
+      <rect class="b-box" x="${BX}" y="${cy - 45}" width="${BW}" height="90" rx="20" fill="#fff" stroke="#3a4048" stroke-width="3"/>
       <g class="b-pills"><rect/><rect/><rect/></g>
-      <text class="b-B" y="${cy + 17}" font-size="50" font-weight="700" text-anchor="middle" fill="${C.ink}">B</text>
-      <line class="b-t" x1="446" x2="446" y1="${cy + 94}" y2="${cy + 50}" stroke="#9aa1ab" stroke-width="2.4" marker-end="url(#${ah})"/>
-      <text x="446" y="${cy + 114}" font-size="17" text-anchor="middle" fill="${C.faint}" font-style="italic">text tokens</text>
+      <text class="b-B" x="${BX + BW / 2}" y="${cy + 17}" font-size="50" font-weight="700" text-anchor="middle" fill="${C.ink}">B</text>
+      <line class="b-t" x1="${BX + BW / 2}" x2="${BX + BW / 2}" y1="${cy + 94}" y2="${cy + 50}" stroke="#9aa1ab" stroke-width="2.4" marker-end="url(#${ah})"/>
+      <text x="${BX + BW / 2}" y="${cy + 114}" font-size="17" text-anchor="middle" fill="${C.faint}" font-style="italic">text tokens</text>
       <g class="b-bd"><line y1="${cy - 72}" y2="${cy + 74}" stroke="${C.ink}" stroke-width="1.8" stroke-dasharray="6 5"/>
         <text class="b-bdl" y="${cy + 95}" font-size="16.5" fill="${C.muted}" text-anchor="middle">fusion boundary</text></g>
       <g class="b-call" data-i="0"><text x="6" y="22" font-size="20.5" font-weight="700"><tspan class="mk"></tspan> Visual prior</text>
@@ -725,11 +942,12 @@
     const lerp = (a, b, t) => a + (b - a) * t;
     let cur = Object.assign({}, S.pretrained), anim = null, curName = "pretrained";
     function draw(s) {
-      q(".b-a").setAttribute("x1", 62); q(".b-a").setAttribute("x2", s.a1);
-      q(".b-a").setAttribute("opacity", s.a1 - 62 > 3 ? 1 : 0);
-      q(".b-c").setAttribute("x1", s.c0); q(".b-c").setAttribute("x2", s.c1);
-      q(".b-box").setAttribute("x", s.bx); q(".b-box").setAttribute("width", s.bw);
-      q(".b-B").setAttribute("x", s.Bx);
+      // wires end under the pills or the box, so none sticks out: the image's wire reaches the first pill (or the box
+      // when there are none), and the last pill's wire reaches the box while the pills sit before it
+      const pr = s.px + 3 * s.pw + 2 * s.pg;
+      q(".b-a").setAttribute("x1", 62); q(".b-a").setAttribute("x2", Math.min(BX, lerp(BX, s.px + 4, s.op)));
+      q(".b-c").setAttribute("x1", pr - 4); q(".b-c").setAttribute("x2", BX);
+      q(".b-c").setAttribute("opacity", pr - 4 < BX ? 1 : 0);
       pills.forEach((p, i) => {
         p.setAttribute("x", s.px + i * (s.pw + s.pg)); p.setAttribute("y", cy - s.ph / 2);
         p.setAttribute("width", s.pw); p.setAttribute("height", s.ph); p.setAttribute("rx", s.pw / 2);
@@ -764,7 +982,7 @@
         if (t0 === null) t0 = now;
         const t = Math.max(0, Math.min(1, (now - t0) / dur)), e = ease(t);
         const s = {};
-        ["op", "pw", "ph", "px", "pg", "a1", "c0", "c1", "bd", "bx", "bw", "Bx"].forEach((k) => (s[k] = lerp(from[k], to[k], e)));
+        ["op", "pw", "ph", "px", "pg", "bd"].forEach((k) => (s[k] = lerp(from[k], to[k], e)));
         s.fillC = mix(rgbHex(fromFill), to.fill, e); s.strokeC = mix(rgbHex(fromStroke), to.stroke, e);
         draw(s);
         cur = Object.assign({}, s, { fill: to.fill, stroke: to.stroke });
@@ -816,9 +1034,12 @@
   if (navs.length) {
     const onScroll = () => {
       const y = window.scrollY + window.innerHeight * 0.3;
+      // the last section (Citation) is too short to reach that line, so it is marked once the page is scrolled to the end
+      const atEnd = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
       navs.forEach((v) => {
         let c = 0;
         v.secs.forEach((s, i) => { if (s && s.offsetTop <= y) c = i; });
+        if (atEnd) c = v.secs.length - 1;
         if (c === v.cur) return;
         v.cur = c;
         v.links.forEach((a, i) => a.classList.toggle("on", i === c));
@@ -832,6 +1053,14 @@
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
+    // the tab bar's right-edge fade hints at more tabs; it goes once the bar is scrolled to its end (or doesn't scroll)
+    const tabList = document.querySelector(".tabs ol");
+    if (tabList) {
+      const edge = () => tabList.classList.toggle("at-end", tabList.scrollLeft + tabList.clientWidth >= tabList.scrollWidth - 2);
+      tabList.addEventListener("scroll", edge, { passive: true });
+      window.addEventListener("resize", edge);
+      edge();
+    }
   }
 
   // ------------------------------------------------------------ heading anchors (a ¶ link shows on hover)

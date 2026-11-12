@@ -2,8 +2,10 @@
    Animated figures: the teaser (the three questions, answered in turn) and §2's protocol grid (published models differ
    in everything, so no comparison is clean; this study fixes each control to one listed setting, leaving the vision
    encoding as the only difference).
-   Every frame is drawn from time alone. Each figure plays once when it reaches the middle of the screen and again on
-   Replay; reduced motion and ?static show the last frame.
+   Every frame is drawn from time alone. Each figure plays once when it reaches the middle of the screen (the teaser, as
+   the page loads if most of it is on screen) and again on Replay; one the reader skips plays when they come back to it,
+   and one still playing when scrolled past jumps to its last frame.
+   Reduced motion and ?static show the last frame.
    Glyphs, markers and colors come from Viz (viz.js). Each figure has a wide layout and a tall one for phones;
    layout tables hold both variants and are switched in place, so the drawing code reads one set of names.
    ========================================================================== */
@@ -66,23 +68,27 @@
   }
   const fit = (s, size, weight, maxW) => Math.min(size, size * maxW / tw(s, size, weight));
 
-  // a recipe glyph centered at (cx, cy), h tall
+  // a recipe glyph centered at (cx, cy), h tall; aligned glyphs are all as wide as a pre-fusion one, so their backbones line up
   const glyphs = new Map();
-  function glyphAt(kind, cx, cy, h) {
-    const key = `${kind}|${h}`;
+  function glyphSize(kind, h, align = false) {
+    const key = `${kind}|${h}|${align}`;
     if (!glyphs.has(key)) {
-      const s = V.glyph(kind, { height: h });
+      const s = V.glyph(kind, { height: h, align });
       glyphs.set(key, { s: s.slice(5), w: +s.match(/width="([\d.]+)"/)[1], h: +s.match(/height="([\d.]+)"/)[1] });
     }
-    const g = glyphs.get(key);
+    return glyphs.get(key);
+  }
+  function glyphAt(kind, cx, cy, h, align = false) {
+    const g = glyphSize(kind, h, align);
     return `<svg x="${r1(cx - g.w / 2)}" y="${r1(cy - g.h / 2)}" ${g.s}`;
   }
   const icon = (id, x, y, size, color) => `<use href="#ic-${id}" x="${r1(x)}" y="${r1(y)}" width="${size}" height="${size}" style="color:${color}"/>`;
   const tick = (cx, cy, r, color = "#fff") => `<path d="M${r1(cx - r * 0.42)},${r1(cy + r * 0.02)}l${r1(r * 0.3)},${r1(r * 0.3)}l${r1(r * 0.56)},${r1(-r * 0.62)}" fill="none" stroke="${color}" stroke-width="${r1(Math.max(1.6, r * 0.22))}" stroke-linecap="round" stroke-linejoin="round"/>`;
 
   // ------------------------------------------------------------ teaser: the three questions, answered in turn
-  const T0 = { answers: [0.8, 1.8, 2.8], dur: 3.4 };
-  const STRIP = [["data", "Common data"], ["schedule", "Training schedule"], ["compute", "Lifetime compute"], ["backbone", "One backbone"]];
+  // answers 1.6 s apart: time to read each question, its two options and the answer before the next lights up
+  const T0 = { answers: [0.8, 2.4, 4.0], dur: 4.6 };
+  const STRIP = [["data", "Data"], ["schedule", "Training schedule"], ["compute", "Lifetime compute"], ["backbone", "Backbone"]];
   const SY = 52;
   // the controls strip: one row on the wide layout, a 2 x 2 grid on the tall one
   function stripLayout() {
@@ -103,11 +109,11 @@
   const QS = [
     { sec: "§3", href: "#prior", q: "Is separate pretraining needed?", a: "Separate pretraining is optional.", opts: [["pretrained", "Pretrained encoder", C.preDark], ["scratch", "Scratch encoder", C.encDark]] },
     { sec: "§4", href: "#capacity", q: "Is vision capacity needed?", a: "Dedicated vision capacity is key.", opts: [["free", "Encoder-free", C.efDark], ["scratch", "Scratch encoder", C.encDark]] },
-    { sec: "§5", href: "#placement", q: "Must capacity precede fusion?", a: "Vision capacity can be in-fusion.", opts: [["scratch", "Pre-fusion capacity", C.encDark], ["infusion", "In-fusion capacity", C.encDark]] },
+    { sec: "§5", href: "#placement", q: "Must capacity precede fusion?", a: "Vision capacity can move in-fusion.", opts: [["scratch", "Pre-fusion capacity", C.encDark], ["infusion", "In-fusion capacity", C.encDark]] },
   ];
   // panels: three columns on the wide layout, three stacked rows (each with its two options side by side) on the tall one
   const PW = 304, PX = (i) => 24 + i * PW, TY = (i) => 144 + i * 222;
-  const OV = { qy: 150, cx: 46, cw: 238, ch: 114, cy: [176, 302], ay: 466, gh: 54 };
+  const OV = { qy: 150, cx: 46, cw: 238, ch: 114, cy: [176, 302], ay: 466, gh: 50 };
   const dividers = () => (TALL ? `<path d="M20,${TY(1) - 12}H${SW - 20}M20,${TY(2) - 12}H${SW - 20}" stroke="#eceef1" stroke-width="1.2"/>` : `<path d="M328,112V488M632,112V488" stroke="#eceef1" stroke-width="1.2"/>`);
   const stripRule = (L) => `<line x1="${TALL ? 20 : 24}" x2="${SW - (TALL ? 20 : 24)}" y1="${L.ruleY}" y2="${L.ruleY}" stroke="#eceef1" stroke-width="1.2"/>` +
     (L.ruleX ? `<line x1="${r1(L.ruleX)}" x2="${r1(L.ruleX)}" y1="${SY - 13}" y2="${SY + 13}" stroke="#d6dadf" stroke-width="1.5"/>` : "");
@@ -119,7 +125,7 @@
     let g = `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="11" fill="${fill}" stroke="${stroke}" stroke-width="1.6"${!pick && ans > 0.5 ? ' stroke-dasharray="6 4"' : ""}/>`;
     g += `<circle cx="${o.rx}" cy="${o.ry}" r="${o.rr}" fill="${pick ? mix("#ffffff", TEAL, ans) : "#ffffff"}" stroke="${pick ? mix("#9aa1ab", TEAL, ans) : "#9aa1ab"}" stroke-width="1.7"/>`;
     if (pick && ans > 0.05) g += grp(tick(o.rx, o.ry, o.rr), { o: ans });
-    return g + grp(glyphAt(kind, o.gx, o.gy, o.gh) + V.T(o.gx, o.ly, label, { size: o.ls, weight: 600, color, anchor: "middle" }), { o: pick ? 1 : 1 - 0.5 * ans });
+    return g + grp(glyphAt(kind, o.gx, o.gy, o.gh, true) + V.T(o.gx, o.ly, label, { size: o.ls, weight: 600, color, anchor: "middle" }), { o: pick ? 1 : 1 - 0.5 * ans });
   }
   function panel(i, ans) {
     const P = QS[i], out = [];
@@ -139,27 +145,28 @@
     const bx = x0 + 22, cx = x0 + OV.cx, mids = OV.cy.map((y) => y + OV.ch / 2);
     out.push(`<path d="M${bx},${mids[0]}V${mids[1]}M${bx},${mids[0]}H${cx - 3}M${bx},${mids[1]}H${cx - 3}" fill="none" stroke="#9aa1ab" stroke-width="2"/>`);
     P.opts.forEach(([kind, label, color], j) => {
-      const y = OV.cy[j], gx = cx + 22 + (OV.cw - 22) / 2;
+      const y = OV.cy[j], gx = cx + 30 + (OV.cw - 30) / 2; // centered between the radio button and the card's right edge
       out.push(card(kind, label, color, j === 1, ans, cx, y, OV.cw, OV.ch, { rx: cx + 22, ry: y + OV.ch / 2, rr: 8, gx, gy: y + 47, gh: OV.gh, ly: y + 97, ls: 17 }));
     });
     out.push(grp(V.T(x0 + PW / 2, OV.ay, P.a, { size: 18, weight: 500, color: TEAL_D, anchor: "middle" }), { o: ans, y: 5 * (1 - ans) }));
     return out.join("");
   }
-  // each panel links to its section; the whole panel is the target
+  // each panel links to its section; the whole panel is the target. The links are kept from frame to frame and only
+  // their contents redrawn: a link replaced between a press and its release would lose the click.
   const panelBox = (i) => (TALL ? [10, TY(i) - 6, SW - 20, 200] : [PX(i) + 4, 122, PW - 8, 368]);
+  const LINKS = QS.map((P) => `<a class="q-link" href="${P.href}" aria-label="${V.esc(`${P.sec} ${P.q} ${P.a}`)}"></a>`);
 
+  // returns the strip's markup, then each link's contents
   function drawOverview(t) {
     const L = stripLayout();
     let s = V.T(L.lx, L.ly, "§2 Controlled", { size: L.lfs, weight: 600, color: TEAL_D }) + stripRule(L) + dividers();
     L.items.forEach((it) => { s += icon(it.id, it.x, it.y - 12, 24, ICON) + V.T(it.x + 33, it.y + 6.5, it.label, { size: L.fs, color: INK2 }); });
-    QS.forEach((P, i) => {
+    return [s, ...QS.map((P, i) => {
       const a0 = T0.answers[i];
       const lit = i === 0 ? 1 : lerp(0.42, 1, inOut(seg(t, a0 - 0.35, a0)));
       const [bx, by, bw, bh] = panelBox(i);
-      s += `<a class="q-link" href="${P.href}" aria-label="${V.esc(`${P.sec} ${P.q} ${P.a}`)}"><rect class="q-hit" x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="10"/>` +
-        grp(panel(i, inOut(seg(t, a0, a0 + 0.5))), { o: lit }) + `</a>`;
-    });
-    return s;
+      return `<rect class="q-hit" x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="10"/>` + grp(panel(i, inOut(seg(t, a0, a0 + 0.5))), { o: lit });
+    })];
   }
 
   // ------------------------------------------------------------ §2 protocol: published models differ in everything; we fix all but the vision encoding
@@ -167,25 +174,34 @@
      them is clean. Each row then snaps to one common setting, its cells merging into one, and the setting is listed
      beside it. Last, the recipes become the vision-encoding band and in-fusion joins: the only thing left that differs.
      On the tall layout each row's label sits above its cells, the cells are drawn smaller, and the listed settings wrap. */
-  const TG = { ne: [0.4, 0.55, 0.7, 0.85], msg: [1.3, 2.8], fix: [3.2, 3.85, 4.5, 5.15], fixDur: 0.6, head: 5.9, inf: [6.2, 6.7], dur: 6.9 };
+  // the "no clean comparison" note is held 2.5 s (1.6 to 4.1 s) so its two lines can be read
+  const TG = { ne: [0.4, 0.55, 0.7, 0.85], msg: [1.3, 4.1], fix: [4.5, 5.15, 5.8, 6.45], fixDur: 0.6, head: 7.2, inf: [7.5, 8.0], dur: 8.2 };
   const PROTO = [
-    { id: "data", label: "Data", fixed: "Common data", lines: ["Text from Nemotron-CC v2 and v2.1", "Image–text pairs from MetaCLIP 1.2 (English subset)", "One set of Qwen2.5-VL-32B captions, shared by all recipes"] },
-    { id: "schedule", label: "Training schedule", fixed: "Training schedule", lines: ["Warmup–stable–decay: any checkpoint can be decayed", "Budgets from 6.5×10^{20} to 2.9×10^{22} FLOPs", "One peak learning rate per backbone size"] },
-    { id: "compute", label: "Compute", fixed: "Lifetime compute", eq: "C_{lifetime} = Σ_{s} C_{s}", lines: ["Every training stage counts, encoder pretraining too", "Recipes are compared at matched lifetime compute"] },
-    { id: "backbone", label: "Backbone", fixed: "One backbone", lines: ["Dense decoder-only Transformer, trained from scratch", "Mainly the Qwen3-1.7B and 4B configurations", "One encoder architecture: a 27-layer, 0.4B ViT"] },
+    { id: "data", label: "Data", fixed: "Data", lines: ["Text from Nemotron-CC v2 and v2.1", "Image–text pairs from MetaCLIP 1.2 (English subset)"] },
+    // the schedule's references are the paper's for warmup-stable-decay (Sec. 2), linked to their papers
+    { id: "schedule", label: "Training schedule", fixed: "Training schedule", lines: ["Warmup–stable–decay schedule ([Hu et al., 2024](https://arxiv.org/abs/2404.06395); [Wen et al., 2025](https://arxiv.org/abs/2410.05192); [Hägele et al., 2024](https://arxiv.org/abs/2405.18392))", "Budgets up to 2.9×10^{22} FLOPs", "One peak learning rate per backbone size"] },
+    { id: "compute", label: "Compute", fixed: "Lifetime compute", eq: "C_{lifetime} = Σ_{s} C_{s}", lines: ["Every training stage counts, including encoder pretraining", "Recipes are compared at matched *lifetime* compute"] },
+    { id: "backbone", label: "Backbone", fixed: "Backbone", lines: ["Dense decoder-only Transformer, trained from scratch", "Follows the Qwen3 1.7B and 4B configurations", "Encoders are 27-layer, 0.4B ViTs"] },
   ];
-  // XM, YM: where a row's cells merge (YM from the row); dx, dw, dfs, dlh, dy: the listed settings' left edge, width, size,
-  // line step and offset from the row; msg: the "no clean comparison" note's center and size. On the tall layout the
+  // gh, bm: the header glyphs' height and the band's side margin; XM, YM: where a row's cells merge (YM from the row); dx, dw, dfs, dlh, dy: the listed settings' left edge, width, size,
+  // line step and (tall layout; the wide one centers the list on its row) offset from the row; msg: the "no clean comparison" note's center and size. On the tall layout the
   // merged setting moves up beside its label, so the list below it can use the full width.
   const GR = table(
-    { HY: 128, gh: 46, ny: 48, ns: 15.5, RY: [236, 328, 420, 512], X3: [363, 592, 821], X4: [334, 506, 678, 850], XM: 322, YM: 0, cs: 1, cdy: 0, lx: 40, ldy: 0, ls: 17.5,
+    { HY: 128, gh: 46, ny: 48, ns: 15.5, RY: [236, 328, 420, 512], X3: [363, 592, 821], bm: 24, XM: 322, YM: 0, cs: 1, cdy: 0, lx: 40, ldy: 0, ls: 17.5,
       band: [252, 92, 688, 98], vx: 40, vy: 134, vs: 17.5, ne: 26, dx: 418, dw: 520, dfs: 16, dlh: 22, dy: -22, msg: [594, 374, 560, 74] },
-    { HY: 162, gh: 30, ny: 33, ns: 13, RY: [282, 446, 610, 774], X3: [87, 220, 353], X4: [70, 170, 270, 370], XM: 364, YM: -28, cs: 0.66, cdy: 16, lx: 20, ldy: -28, ls: 17,
-      band: [20, 128, 400, 78], vx: 20, vy: 118, vs: 14, ne: 20, dx: 20, dw: 400, dfs: 16, dlh: 21, dy: 8, msg: [220, 528, 404, 80] });
+    { HY: 162, gh: 25, ny: 31, ns: 13, RY: [282, 404, 568, 732], X3: [87, 220, 353], bm: 12, XM: 364, YM: -28, cs: 0.66, cdy: 16, lx: 20, ldy: -28, ls: 17,
+      band: [20, 128, 400, 78], vx: 20, vy: 118, vs: 14, ne: 20, dx: 20, dw: 400, dfs: 16, dlh: 21, dy: 8, msg: [220, 507, 404, 80] });
   const COLS = [["pretrained", "Pretrained encoder", "Pretrained", C.preDark], ["scratch", "Scratch encoder", "Scratch", C.encDark], ["free", "Encoder-free", "Encoder-free", C.efDark], ["infusion", "In-fusion", "In-fusion", C.infDark]];
   const GRAY_F = ["#e6e9ed", "#d9dde2", "#eef0f2"], GRAY_S = "#9aa1ab";
+  // the four recipes' places in the vision-encoding band: equal gaps between their glyphs and a GR.bm margin at either end
+  function bandX() {
+    const [bx, , bw] = GR.band, ws = COLS.map(([kind]) => glyphSize(kind, GR.gh).w);
+    const gap = (bw - 2 * GR.bm - ws.reduce((a, b) => a + b, 0)) / (ws.length - 1);
+    let x = bx + GR.bm;
+    return ws.map((w) => { const c = x + w / 2; x += w + gap; return c; });
+  }
 
-  // Common data: datasets as cylinders on one baseline. Published: different sets; controlled: the same three.
+  // Data: datasets as cylinders on one baseline. Published: different sets; controlled: the same three.
   const DATA_M = [[[-26, 22, 30], [0, 22, 40], [26, 22, 22]], [[0, 44, 42], [0, 0, 0], [0, 0, 0]], [[-14, 22, 22], [14, 22, 32], [14, 0, 0]]];
   const DATA_C = [[-26, 22, 34], [0, 22, 34], [26, 22, 34]];
   function cyl(cx, base, w, h, fill, stroke) {
@@ -241,7 +257,7 @@
     return g;
   }
 
-  // One backbone: a stack of layers. Published: different depths and widths; controlled: one configuration.
+  // Backbone: a stack of layers. Published: different depths and widths; controlled: one configuration.
   const BB_M = [[5, 72], [3, 108], [6, 56]], BB_C = [4, 88];
   function cellBackbone(cx, cy, j, e) {
     const [nm, wm] = BB_M[j] || BB_C, [nc, wc] = BB_C;
@@ -256,16 +272,18 @@
   }
   const CELL = [cellData, cellSchedule, cellCompute, cellBackbone];
 
-  // a row's listed settings, each broken to the column's width: the equation (if any), then one bulleted line per setting
+  // a row's listed settings, each broken to the column's width: the equation (if any), then one bulleted line per setting.
+  // A link's label never breaks (its spaces are held as no-break spaces), and markup is left out of the measure.
   const wraps = new Map();
+  const plainText = (s) => s.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").replace(/[\^_]\{([^}]*)\}/g, "$1").replace(/\*([^*]+)\*/g, "$1");
   function wrap(str, size, maxW) {
     const key = `${str}|${size}|${maxW}`;
     if (!wraps.has(key)) {
       const out = [];
       let cur = "";
-      str.split(" ").forEach((w) => {
+      str.replace(/\[([^\]]+)\]/g, (m, l) => `[${l.replace(/ /g, "\u00a0")}]`).split(" ").forEach((w) => {
         const next = cur ? `${cur} ${w}` : w;
-        if (cur && tw(next.replace(/[\^_]\{([^}]*)\}/g, "$1"), size) > maxW) { out.push(cur); cur = w; } else cur = next;
+        if (cur && tw(plainText(next), size) > maxW) { out.push(cur); cur = w; } else cur = next;
       });
       out.push(cur);
       wraps.set(key, out);
@@ -289,17 +307,19 @@
     }
     s += grp(V.T(GR.vx, GR.vy, "Published models", { size: GR.vs, weight: 600, color: C.muted }), { o: 1 - hb });
     s += grp(V.T(GR.vx, GR.vy, "Vision encoding", { size: GR.vs, weight: 600, color: TEAL_D }), { o: hb, x: -8 * (1 - hb) });
+    const X4 = bandX();
     COLS.forEach(([kind, name, short, color], j) => {
-      const o = j < 3 ? 1 : inf, x = j < 3 ? lerp(GR.X3[j], GR.X4[j], h) : GR.X4[3] + 24 * (1 - inf);
+      const o = j < 3 ? 1 : inf, x = j < 3 ? lerp(GR.X3[j], X4[j], h) : X4[3] + 24 * (1 - inf);
       if (o > 0) s += grp(glyphAt(kind, x, GR.HY, GR.gh) + V.T(x, GR.HY + GR.ny, TALL ? short : name, { size: GR.ns, weight: 600, color, anchor: "middle" }), { o, y: j < 3 ? 0 : -10 * (1 - o) });
     });
     PROTO.forEach((P, i) => {
       const f = TG.fix[i], e = inOut(seg(t, f, f + TG.fixDur)), m = inOut(seg(t, f + 0.1, f + 0.1 + TG.fixDur));
       const ly = GR.RY[i] + GR.ldy, cy = GR.RY[i] + GR.cdy;
-      // label: the control, renamed for its common setting once fixed
+      // label: the control, renamed for its common setting once fixed; the old name fades out before the new one fades
+      // in, so the two never overlap
       s += icon(P.id, GR.lx, ly - 12, 24, mix(ICON, TEAL, e));
       const lab = (str, o) => grp(V.T(GR.lx + 33, ly + 6.5, str, { size: GR.ls, color: C.ink }), { o });
-      s += P.fixed === P.label ? lab(P.label, 1) : lab(P.label, 1 - e) + lab(P.fixed, e);
+      s += P.fixed === P.label ? lab(P.label, 1) : lab(P.label, clamp(1 - 2 * e)) + lab(P.fixed, clamp(2 * e - 1));
       // cells: one per published model, then merged into the one common setting
       [0, 1, 2].forEach((j) => {
         const x = lerp(GR.X3[j], GR.XM, m), y = lerp(cy, GR.RY[i] + GR.YM, m), o = (j ? 1 - seg(m, 0.55, 1) : 1) * dim;
@@ -308,9 +328,10 @@
       // the published models differ
       const ne = outC(seg(t, TG.ne[i], TG.ne[i] + 0.25)) * (1 - seg(t, TG.msg[1], TG.msg[1] + 0.3)) * dim;
       if (ne > 0.002) [0, 1].forEach((j) => { s += grp(V.T((GR.X3[j] + GR.X3[j + 1]) / 2, cy + GR.ne * 0.34, "≠", { size: GR.ne, anchor: "middle", color: "#9aa1ab" }), { o: ne }); });
-      // the common setting, listed line by line
-      let y = GR.RY[i] + GR.dy;
-      settingLines(P).forEach((L, k) => {
+      // the common setting, listed line by line: centered on its row (wide), or below its label (tall)
+      const SL = settingLines(P);
+      let y = GR.RY[i] + (TALL ? GR.dy : -(SL.length - 1) * GR.dlh / 2);
+      SL.forEach((L, k) => {
         if (TALL && L.bullet && k) y += 3;
         const o = outC(seg(t, f + 0.5 + 0.08 * k, f + 0.9 + 0.08 * k));
         if (o > 0.002) {
@@ -330,16 +351,18 @@
     return s;
   }
 
-  // ------------------------------------------------------------ playback: once when the figure reaches mid-screen, again on Replay
+  // ------------------------------------------------------------ playback: once when the figure reaches mid-screen (the teaser: on load), again on Replay
   const figures = [];
-  function animate(el, draw, dur, boxes) {
+  // draw(t) returns the picture's markup, or with shells, a list: the markup outside them, then each shell's contents
+  function animate(el, draw, dur, boxes, shells) {
     const svg = el.querySelector("svg.anim"), body = svg.querySelector("g"), btn = el.querySelector(".replay");
-    let t = reduceMotion ? dur : 0, tall = false, raf = 0, last = null, lastDraw = -Infinity, drawn = "";
-    // redrawn only when the picture changes, at most once per screen refresh up to 100 Hz
+    let t = reduceMotion ? dur : 0, tall = false, raf = 0, last = null, lastDraw = -Infinity;
+    if (shells) body.innerHTML = `<g></g>${shells.join("")}`;
+    const parts = shells ? [...body.children] : [body], drawn = [];
+    // redrawn only where the picture changes, at most once per screen refresh up to 100 Hz
     function render() {
       setShape(tall);
-      const s = draw(t);
-      if (s !== drawn) body.innerHTML = drawn = s;
+      [].concat(draw(t)).forEach((s, k) => { if (s !== drawn[k]) parts[k].innerHTML = drawn[k] = s; });
     }
     function fitShape() {
       const next = el.clientWidth > 0 && el.clientWidth < 640;
@@ -350,14 +373,25 @@
       svg.dataset.shape = tall ? "tall" : "wide";
       return true;
     }
+    // the picture holds still while a pointer is pressed on it (up to a second), so that the press and the release land
+    // on the same element and make a click
+    let heldAt = -Infinity;
+    svg.addEventListener("pointerdown", () => { heldAt = performance.now(); });
+    ["pointerup", "pointercancel"].forEach((k) => window.addEventListener(k, () => { heldAt = -Infinity; }, true));
     function loop(stamp) {
       if (last != null) t = Math.min(dur, t + Math.min(0.1, (stamp - last) / 1000));
       last = stamp;
-      if (stamp - lastDraw >= 10 || t >= dur) { lastDraw = stamp; render(); }
-      if (t < dur) raf = requestAnimationFrame(loop);
+      const held = stamp - heldAt < 1000;
+      if (!held && (stamp - lastDraw >= 10 || t >= dur)) { lastDraw = stamp; render(); }
+      if (t < dur || held) raf = requestAnimationFrame(loop);
     }
-    let played = false;
-    function play() { played = true; cancelAnimationFrame(raf); t = 0; last = null; render(); raf = requestAnimationFrame(loop); }
+    // a figure the reader scrolls past while it plays jumps to its last frame
+    let played = false, passWatch = false;
+    function finish() { played = true; cancelAnimationFrame(raf); t = dur; render(); }
+    function play() {
+      played = true; cancelAnimationFrame(raf); t = 0; last = null; render(); raf = requestAnimationFrame(loop);
+      if (!passWatch) { passWatch = true; V.whenPassed(svg, () => { passWatch = false; if (t < dur) finish(); }); }
+    }
     fitShape();
     render();
     figures.push(render);
@@ -368,8 +402,11 @@
   }
 
   const teaser = document.querySelector(".teaser");
-  if (teaser) animate(teaser, drawOverview, T0.dur, [[0, 0, 960, 500], [0, 0, 440, 800]]);
+  // the teaser plays as the page loads when three quarters of it is on screen (as on a 1440 x 900 screen), so a reader
+  // who doesn't scroll still sees the questions answered; when less of it shows (phones, short laptops), it waits for
+  // mid-screen (viz.js: landing)
+  if (teaser) animate(teaser, drawOverview, T0.dur, [[0, 0, 960, 500], [0, 0, 440, 800]], LINKS);
   const grid = document.getElementById("fig-protocol");
-  if (grid) animate(grid, drawGrid, TG.dur, [[0, 84, 960, 470], [0, 100, 440, 750]]);
+  if (grid) animate(grid, drawGrid, TG.dur, [[0, 84, 960, 470], [0, 100, 440, 712]]);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { widths.clear(); wraps.clear(); figures.forEach((r) => r()); });
 })();

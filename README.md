@@ -34,6 +34,8 @@ Charts are drawn as SVG for the width of their container and redrawn on resize, 
 
 `static/img/social-card.png` (1200×630, rendered at 2×) is a screenshot of `tools/social-card.html`. To regenerate it, serve the repo as above and screenshot that page at 1200×630 with a device scale factor of 2. Any headless Chrome works.
 
+The card still uses the teaser classes (`.t-grid`, `.q-a` and so on) from the first version of the page, which the current `static/css/style.css` no longer has. Render it against that version's stylesheet and `viz.js`: copy the page into a temporary tree with `git show f4224bc:static/css/style.css` and `git show f4224bc:static/js/viz.js` in their usual places, plus the current `static/img` and `static/fonts`.
+
 ## Before the arXiv release
 
 - [ ] Paper button: arXiv abstract URL (`data-todo="arxiv"` in `index.html`).

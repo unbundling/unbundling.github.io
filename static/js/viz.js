@@ -41,22 +41,32 @@
   const A = (o) => Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== false)
     .map(([k, v]) => `${k}="${typeof v === "number" ? r1(v) : esc(v)}"`).join(" ");
 
-  // "2.6×10^21" -> superscript; "x_{l}" -> subscript; "*word*" -> italic. Shifts are absolute so text after them resets.
+  // "2.6×10^21" -> superscript; "x_{l}" -> subscript; "*word*" -> italic; "[label](url)" -> a link. Shifts are absolute so
+  // text after them resets.
   function rich(s, fs) {
     const up = r1(fs * 0.38), dn = r1(fs * 0.22);
     let out = "", shift = 0;
-    const re = /\^\{([^}]+)\}|\^(-?[\d.]+)|_\{([^}]+)\}|\*([^*]+)\*|([^^_*]+|[\^_*])/g;
+    const re = /\^\{([^}]+)\}|\^(-?[\d.]+)|_\{([^}]+)\}|\*([^*]+)\*|\[([^\]]+)\]\(([^)\s]+)\)|([^^_*[]+|[\^_*[])/g;
     let m;
     while ((m = re.exec(String(s)))) {
-      const sup = m[1] || m[2], sub = m[3], it = m[4], plain = m[5];
+      const sup = m[1] || m[2], sub = m[3], it = m[4], link = m[5], plain = m[7];
       if (sup) { out += `<tspan dy="${-up - shift}" font-size="${r1(fs * 0.7)}">${esc(sup)}</tspan>`; shift = -up; }
       else if (sub) { out += `<tspan dy="${dn - shift}" font-size="${r1(fs * 0.72)}">${esc(sub)}</tspan>`; shift = dn; }
+      else if (link) { out += `<a class="cite" href="${esc(m[6])}"><tspan${shift ? ` dy="${-shift}"` : ""}>${esc(link)}</tspan></a>`; shift = 0; }
       else {
         const body = it ? `<tspan font-style="italic"${shift ? ` dy="${-shift}"` : ""}>${esc(it)}</tspan>` : (shift ? `<tspan dy="${-shift}">${esc(plain)}</tspan>` : esc(plain));
         out += body; shift = 0;
       }
     }
     return out;
+  }
+
+  // a text's width in the page font (for laying out keys; slightly generous, in case the web font is still loading)
+  let measureCtx = null;
+  function textW(s, size, weight = 400) {
+    if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
+    measureCtx.font = `${weight} ${size}px ${getComputedStyle(document.body).fontFamily}`;
+    return measureCtx.measureText(s).width * 1.03;
   }
 
   function T(x, y, s, o = {}) {
@@ -114,34 +124,32 @@
 
   // ------------------------------------------------------------------ glyphs
   /* Recipe glyphs in the style of the paper's Figure 1: pills = dedicated vision capacity (orange if pretrained,
-     blue if trained from scratch), B = the shared backbone. kind: pretrained | scratch | free | infusion */
+     blue if trained from scratch), B = the shared backbone. kind: pretrained | scratch | free | infusion.
+     The backbone box and its B are the same in every recipe; only the pills change. Pre-fusion pills sit before the
+     box; in-fusion pills sit inside its left part, clear of the B. With o.align, every recipe is drawn as wide as a
+     pre-fusion one, with the box at the right, so stacked glyphs line up their backbones and B's. */
+  const GLYPH = { H: 56, pw: 15, ph: 38, gap: 4.5, lead: 16, bw: 128, bh: 48, rad: 11, iw: 10, ih: 30, ig: 3, ipad: 7 };
+  GLYPH.pre = 3 * GLYPH.pw + 2 * GLYPH.gap + GLYPH.lead; // where the box starts when pills precede it
   function glyph(kind, o = {}) {
-    const dim = !!o.dim, H = 56;
-    const pw = 15, ph = 38, gap = 4.5, bw = 74, bh = 48, rad = 11;
+    const { H, pw, ph, gap, bw, bh, rad, iw, ih, ig, ipad } = GLYPH;
+    const dim = !!o.dim;
     const ink = dim ? "#b4b9c0" : "#3a4048";
     const dash = dim ? ' stroke-dasharray="5 4"' : "";
     const fills = { pretrained: [C.preLight, C.pre], scratch: [C.encLight, C.enc], infusion: [C.encLight, C.enc] }[kind];
     const pf = fills ? fills[0] : null, ps = fills ? fills[1] : null;
     const pill = (x, y, w, h) => `<rect x="${r1(x)}" y="${r1(y)}" width="${w}" height="${h}" rx="${w / 2}" fill="${pf}" stroke="${ps}" stroke-width="2"/>`;
-    const box = (x, w) => `<rect x="${x}" y="${(H - bh) / 2}" width="${w}" height="${bh}" rx="${rad}" fill="#fff" stroke="${ink}" stroke-width="2.2"${dash}/>`;
-    const B = (x) => T(x, H / 2 + 8.5, "B", { size: 24, weight: 700, anchor: "middle", color: dim ? "#9aa1a9" : C.ink });
-    const wire = (x0, x1) => `<line x1="${x0}" x2="${x1}" y1="${H / 2}" y2="${H / 2}" stroke="${dim ? "#cdd1d6" : "#9aa1ab"}" stroke-width="3"/>`;
-    let g = "", W;
-    if (kind === "pretrained" || kind === "scratch") {
+    const prefusion = kind === "pretrained" || kind === "scratch";
+    const x0 = prefusion || o.align ? GLYPH.pre : 0; // the box's left edge
+    let g = "";
+    if (prefusion) {
       for (let i = 0; i < 3; i++) g += pill(i * (pw + gap), (H - ph) / 2, pw, ph);
-      const cx = 3 * pw + 2 * gap;
-      g += wire(cx, cx + 16) + box(cx + 16, bw) + B(cx + 16 + bw / 2);
-      W = cx + 16 + bw;
-    } else if (kind === "free") {
-      g += wire(0, 22) + box(22, bw) + B(22 + bw / 2);
-      W = 22 + bw;
-    } else {
-      const iw = 112, sw = 12, sh = 30, sg = 3.5;
-      g += wire(0, 14) + box(14, iw);
-      for (let i = 0; i < 3; i++) g += pill(14 + 13 + i * (sw + sg), (H - sh) / 2, sw, sh);
-      g += B(14 + iw - 28);
-      W = 14 + iw;
+      // the wire starts outside the last pill's outline and ends under the box's
+      g += `<line x1="${3 * pw + 2 * gap + 1}" x2="${x0}" y1="${H / 2}" y2="${H / 2}" stroke="${dim ? "#cdd1d6" : "#9aa1ab"}" stroke-width="3"/>`;
     }
+    g += `<rect x="${x0}" y="${(H - bh) / 2}" width="${bw}" height="${bh}" rx="${rad}" fill="#fff" stroke="${ink}" stroke-width="2.2"${dash}/>`;
+    if (kind === "infusion") for (let i = 0; i < 3; i++) g += pill(x0 + ipad + i * (iw + ig), (H - ih) / 2, iw, ih);
+    g += T(x0 + bw / 2, H / 2 + 8.5, "B", { size: 24, weight: 700, anchor: "middle", color: dim ? "#9aa1a9" : C.ink });
+    const W = x0 + bw;
     const s = o.height ? o.height / H : (o.scale || 1);
     return `<svg class="glyph" width="${r1((W + 4) * s)}" height="${r1((H + 4) * s)}" viewBox="-2 -2 ${W + 4} ${H + 4}" aria-hidden="true">${g}</svg>`;
   }
@@ -307,15 +315,18 @@
       p += `<g class="hl"></g>`;
       p += `<rect class="hit" data-panel="${i}" x="${r1(X0 - 8)}" y="${r1(Y1 - 8)}" width="${r1(X1 - X0 + 16)}" height="${r1(Y0 - Y1 + 16)}" fill="transparent"/>`;
       g += `<g class="panel" data-panel="${i}">${p}</g>`;
-      meta.push({ X0, X1, Y0, Y1, sx, sy, series: smeta, xinfo: P.xinfo, yfmt: P.y.tipFmt || f1, title: P.title, metricName: P.metricName });
+      meta.push({ X0, X1, Y0, Y1, sx, sy, series: smeta, xinfo: P.xinfo, yfmt: P.y.tipFmt || f1, title: P.title, metricName: P.metricName, tol: P.hoverTol });
     });
     return { svg: svgWrap(width, H, `<defs>${defs.join("")}</defs>${g}`, { label: spec.label }), meta, kind: "line" };
   }
 
   // --------------------------------------------------------------- dot plots
   /* Rows of dots on one value axis (used where values sit in a narrow range, so bars would need a cut axis).
-     spec: { groups:[{title, sub, rows:[{key, label, sub, icon, value, color, marker, valueText, side, tip, strong, track, from}]}],
-             x:{domain, ticks, label}, refs:[{value, label, color}], side:{header, fmt}, labelW, iconW } */
+     spec: { groups:[{title, sub, rows:[{key, label, sub, icon, value, color, marker, valueText, side, value2, value2Text, tip,
+             strong, track, from}]}], x:{domain, ticks, label}, refs:[{value, label, color}], side:{header, fmt}, labelW, iconW,
+             second:{domain, ticks, label, short}, legend:[{name, color, marker}] }
+     second: a second value axis in a narrower panel on the right, with each row's value2 drawn as a dot on its own axis
+     (on narrow screens, as "short value2Text" beside the row's label). legend: a key of the row markers above the plot. */
   function dotPlot(width, spec) {
     const fs = width < 420 ? 13.5 : 15;
     const stacked = width < (spec.stackBelow || 540);  // narrow screens: each row's label sits above its dot line
@@ -323,10 +334,25 @@
     const labelW = stacked ? 0 : (narrow ? (spec.labelWNarrow || spec.labelW * 0.8) : spec.labelW);
     const iconW = stacked ? 0 : (narrow && spec.hideIconsNarrow ? 0 : (spec.iconW || 0));
     const sideW = spec.side && !stacked ? (narrow ? 60 : 66) : 0;
-    const X0 = stacked ? 10 : labelW + iconW + 14, X1 = width - sideW - (stacked ? 44 : 26);
+    const two = !!spec.second && !stacked, P2W = two ? Math.max(120, Math.round(width * 0.2)) : 0;
+    const X0 = stacked ? 10 : labelW + iconW + 14, X1 = width - sideW - (two ? P2W + 82 : stacked ? 44 : 26);
     const sx = scale(spec.x.domain, [X0, X1]);
-    const rowH = stacked ? 50 : (spec.rowH || 33), top = (spec.refs && spec.refs.some((r) => r.label)) || (spec.side && !stacked) ? 34 : 12;
-    let y = top, g = "", hits = [];
+    // the second panel: S0..S1, with room on the right for the last dot's value
+    const S0 = X1 + 40, S1 = width - 42, sx2 = two ? scale(spec.second.domain, [S0, S1]) : null;
+    // the legend: one row of marker keys, wrapping to the width
+    let leg = "", legH = 0;
+    if (spec.legend) {
+      let lx = 0, ly = fs;
+      spec.legend.forEach((L) => {
+        const w = 17 + textW(L.name, fs - 1);
+        if (lx && lx + w > width) { lx = 0; ly += fs + 9; }
+        leg += marker(L.marker, lx + 6, ly - fs * .34, 5.2, L.color, { sw: 1.4 }) + T(lx + 17, ly, L.name, { size: fs - 1, color: "#3d4651" });
+        lx += w + 22;
+      });
+      legH = ly + 14;
+    }
+    const rowH = stacked ? 50 : (spec.rowH || 33), top = legH + ((spec.refs && spec.refs.some((r) => r.label)) || (spec.side && !stacked) ? 34 : 12);
+    let y = top, g = leg, hits = [];
     const tips = [];
     spec.groups.forEach((grp, gi) => {
       if (grp.title) {
@@ -340,8 +366,10 @@
         g += `<line x1="${r1(X0)}" x2="${r1(X1)}" y1="${r1(cy)}" y2="${r1(cy)}" stroke="${C.grid}" stroke-width="1"/>`;
         if (stacked) {
           g += T(0, y + fs + 2, row.label, { size: fs, color: row.labelColor || C.ink, weight: row.strong ? 700 : undefined, halo: true }); // halo: reference lines pass behind
-          if (row.icon) g += `<g data-b="strip" ${rb} transform="translate(${r1(width - 150)},${r1(y + 2)})">${row.icon}</g>`;
+          // a white backing, like the labels' halo, so reference lines pass behind the strip
+          if (row.icon) g += `<g data-b="strip" ${rb} transform="translate(${r1(width - 150)},${r1(y + 2)})"><rect x="-4" y="-3" width="154" height="25" fill="#fff"/>${row.icon}</g>`;
           else if (spec.side && row.side != null) g += tag(T(width, y + fs + 2, `${spec.side.short || "Text"} ${row.side}`, { size: fs - 1.5, anchor: "end", color: C.muted, cls: "tnum" }), `data-b="val" ${rb}`);
+          else if (spec.second && row.value2 != null) g += tag(T(width, y + fs + 2, `${spec.second.short} ${row.value2Text || f1(row.value2)}`, { size: fs - 1.5, anchor: "end", color: C.muted, cls: "tnum" }), `data-b="val" ${rb}`);
         } else {
           g += T(labelW - 6, cy + fs * .34, row.label, { size: fs, anchor: "end", color: row.labelColor || C.ink, weight: row.strong ? 700 : undefined });
         }
@@ -352,13 +380,22 @@
           const [ta, tb] = row.track.map(sx);
           g += `<rect data-b="track" ${rb} x="${r1(Math.min(ta, tb))}" y="${r1(cy - 4)}" width="${r1(Math.abs(tb - ta))}" height="8" rx="4" fill="#edf0f3"/>`;
         }
-        if (row.from != null && Math.abs(x - sx(row.from)) > 0.5) {
+        // a row that falls short of its track's start has made no progress along it, so it gets no fill
+        if (row.from != null && row.value > row.from && Math.abs(x - sx(row.from)) > 0.5) {
           const xf = sx(row.from);
           g += `<rect data-b="fill" ${rb} x="${r1(Math.min(xf, x))}" y="${r1(cy - 4)}" width="${r1(Math.abs(x - xf))}" height="8" rx="4" fill="${row.color}" opacity=".6"/>`;
         }
         g += tag(marker(row.marker || "circle", x, cy, row.r || 6, row.color, { sw: 2 }), `data-b="pt" ${rb}`);
-        g += tag(T(x + (row.r || 6) + 6, cy + fs * .34, row.valueText || f1(row.value), { size: fs, weight: 700, color: C.ink, halo: true, cls: "tnum" }), `data-b="val" ${rb}`);
+        // and labels its value on the left, clear of the track
+        const short = row.from != null && row.value < row.from, vx = short ? x - (row.r || 6) - 6 : x + (row.r || 6) + 6;
+        g += tag(T(vx, cy + fs * .34, row.valueText || f1(row.value), { size: fs, weight: 700, color: C.ink, halo: true, cls: "tnum", anchor: short ? "end" : undefined }), `data-b="val" ${rb}`);
         if (spec.side && row.side != null && !stacked) g += tag(T(width - sideW / 2, cy + fs * .34, row.side, { size: fs - 1, anchor: "middle", color: C.muted, cls: "tnum" }), `data-b="val" ${rb}`);
+        if (two && row.value2 != null) {
+          const x2 = sx2(row.value2);
+          g += `<line x1="${r1(S0)}" x2="${r1(S1)}" y1="${r1(cy)}" y2="${r1(cy)}" stroke="${C.grid}" stroke-width="1"/>`;
+          g += tag(marker(row.marker || "circle", x2, cy, row.r || 6, row.color, { sw: 2 }), `data-b="pt2" ${rb}`);
+          g += tag(T(x2 + (row.r || 6) + 6, cy + fs * .34, row.value2Text || f1(row.value2), { size: fs, weight: 700, color: C.ink, halo: true, cls: "tnum" }), `data-b="val" ${rb}`);
+        }
         tips.push(row.tip || null);
         hits.push(`<rect class="hit-row" data-i="${tips.length - 1}" x="0" y="${r1(y)}" width="${r1(width)}" height="${rowH}" fill="transparent"/>`);
         y += rowH;
@@ -372,6 +409,14 @@
     });
     axis += `<line x1="${r1(X0)}" x2="${r1(X1)}" y1="${r1(bottom)}" y2="${r1(bottom)}" stroke="${C.axis}" stroke-width="1"/>`;
     if (spec.x.label) axis += T((X0 + X1) / 2, bottom + fs * 2 + 12, spec.x.label, { size: fs, anchor: "middle" });
+    if (two) {
+      spec.second.ticks.forEach((t) => {
+        axis += `<line x1="${r1(sx2(t))}" x2="${r1(sx2(t))}" y1="${top - 4}" y2="${r1(bottom)}" stroke="${C.grid}" stroke-width="1"/>`;
+        axis += T(sx2(t), bottom + fs + 6, String(t), { size: fs - 1, anchor: "middle", color: C.muted, cls: "tnum" });
+      });
+      axis += `<line x1="${r1(S0)}" x2="${r1(S1)}" y1="${r1(bottom)}" y2="${r1(bottom)}" stroke="${C.axis}" stroke-width="1"/>`;
+      axis += T((S0 + S1) / 2, bottom + fs * 2 + 12, spec.second.label, { size: fs, anchor: "middle" });
+    }
     if (spec.side && !stacked) axis += T(width - sideW / 2, top - 8, spec.side.header, { size: fs - 1.5, anchor: "middle", color: C.faint });
     (spec.refs || []).forEach((rf) => {
       const x = sx(rf.value);
@@ -441,7 +486,8 @@
   }
 
   // ------------------------------------------------------------- schematics
-  const token = (x, y, color) => `<rect x="${x}" y="${y - 5}" width="9" height="9" rx="2" fill="${color}"/>`;
+  // a token is drawn as its legend swatch (light fill, colored outline), kept to the same 9 px box
+  const token = (x, y, color) => `<rect x="${x + 0.7}" y="${y - 4.3}" width="7.6" height="7.6" rx="1.8" fill="${color === C.enc ? C.encFill : C.textFill}" stroke="${color}" stroke-width="1.4"/>`;
   /* Figure 4, redrawn. (a) In-fusion: one shared residual stream; vision-only modules (blue, pink outline) add to the
      shared modules' outputs. (b) MoT: separate text and vision streams that meet only in attention.
      Each part is a data-tip group that main.js explains on hover. A token's group carries data-follow: pointing at it
@@ -470,77 +516,105 @@
     // attention path
     g += ln(`M52,${Y} L52,${Yb} L68,${Yb}`, dk) + part("norm", norm(80, Yb)) + ln(`M91,${Yb} L106,${Yb}`, dk) + part("qkv", box(108, Yb, 64, "QKV"));
     g += ln(`M172,${Yb} L180,${Yb}`, dk, false, false) + part("dplus", plus(190, Yb, true)) + ln(`M200,${Yb} L212,${Yb}`, dk);
-    g += part("attn", box(214, Yb, 52, "Attn")) + ln(`M266,${Yb} L276,${Yb}`, dk) + part("o", box(278, Yb, 34, "O")) + ln(`M305,${Yb - 17} L305,${Y + 12}`, dk);
+    g += part("attn", box(214, Yb, 52, "Attn")) + ln(`M266,${Yb} L276,${Yb}`, dk) + part("o", box(278, Yb, 36, "O")) + ln(`M305,${Yb - 17} L305,${Y + 9}`, dk);
     // ffn path
-    g += ln(`M338,${Y} L338,${Yb} L354,${Yb}`, dk) + part("norm", norm(366, Yb)) + ln(`M377,${Yb} L392,${Yb}`, dk) + part("ffn", box(394, Yb, 62, "FFN")) + ln(`M456,${Yb} L463,${Yb} L463,${Y + 12}`, dk);
+    g += ln(`M338,${Y} L338,${Yb} L354,${Yb}`, dk) + part("norm", norm(366, Yb)) + ln(`M377,${Yb} L392,${Yb}`, dk) + part("ffn", box(394, Yb, 62, "FFN")) + ln(`M456,${Yb} L463,${Yb} L463,${Y + 9}`, dk);
     // vision-only modules: the dashed attention projections (left out in FFN-only) and the FFN branch
     g += `<g class="vis-only">` + ln(`M80,${Yb + 11} L80,${Yd} L106,${Yd}`, C.enc, true) + part("dqkv", vbox(108, Yd, 64, "ΔQKV", true)) + ln(`M172,${Yd} L190,${Yd} L190,${Yb + 12}`, C.enc, true) +
-      ln(`M240,${Yb + 17} L240,${Yd} L276,${Yd}`, C.enc, true) + part("do", vbox(278, Yd, 40, "ΔO", true)) + ln(`M318,${Yd} L321,${Yd} L321,${Y + 12}`, C.enc, true) +
-      ln(`M366,${Yb + 11} L366,${Yd} L392,${Yd}`, C.enc) + part("dffn", vbox(394, Yd, 62, "ΔFFN", false)) + ln(`M456,${Yd} L479,${Yd} L479,${Y + 12}`, C.enc) + `</g>`;
-    return svgWrap(W, H, g, { fluid: true, label: "In-fusion block: shared modules process every token; vision-only modules add to their outputs for vision tokens", cls: "schematic" });
+      ln(`M240,${Yb + 17} L240,${Yd} L276,${Yd}`, C.enc, true) + part("do", vbox(278, Yd, 36, "ΔO", true)) + ln(`M314,${Yd} L319,${Yd} L319,${Y + 9}`, C.enc, true) +
+      ln(`M366,${Yb + 11} L366,${Yd} L392,${Yd}`, C.enc) + part("dffn", vbox(394, Yd, 62, "ΔFFN", false)) + ln(`M456,${Yd} L477,${Yd} L477,${Y + 9}`, C.enc) + `</g>`;
+    return svgWrap(W, H, g, { fluid: true, label: "In-fusion block: shared modules process every token, and vision-only modules add to their outputs for vision tokens", cls: "schematic" });
   }
 
+  /* Drawn with the in-fusion block's parts (box, norm, add and stream sizes, label sizes, and the widths of QKV, Attn,
+     O and FFN) and at its height, so the two read at one scale side by side. */
   function motBlock() {
-    const W = 420, H = 198;
-    const ys = 36, Yt = 76, Yv = 120, yv = 160; // text stream, text modules, vision modules, vision stream
+    const W = 473, H = 230;
+    const ys = 54, Yt = 98, Yv = 142, yv = 186; // text stream, text modules, vision modules, vision stream
     const ink = "#3d4651";
     const ids = { t: nextId("at"), v: nextId("av") };
     const tcol = C.textStroke, vcol = C.enc;
     let g = `<defs>${arrowDef(ids.t, tcol)}${arrowDef(ids.v, vcol)}</defs>`;
     const ln = (d, col, arrow = true, w = 1.8) => `<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}"${arrow ? ` marker-end="url(#${col === tcol ? ids.t : ids.v})"` : ""}/>`;
-    const box = (x, y, w, lab, t) => `<rect x="${x}" y="${y - 16}" width="${w}" height="32" rx="7" fill="${t ? C.textFill : C.encFill}" stroke="${t ? tcol : vcol}" stroke-width="1.6"/>` + T(x + w / 2, y + 5.5, lab, { size: 15.5, anchor: "middle", weight: 700, color: t ? C.textDark : C.encDark });
-    const norm = (x, y, col) => `<rect x="${x - 10}" y="${y - 10}" width="20" height="20" rx="5.5" fill="#fff" stroke="${col}" stroke-width="1.4"/>` + T(x, y + 4.5, "N", { size: 12.5, anchor: "middle", color: ink });
-    const plus = (x, y, col) => `<circle cx="${x}" cy="${y}" r="9" fill="#fff" stroke="${col}" stroke-width="1.6"/>` + T(x, y + 5, "+", { size: 15, anchor: "middle", weight: 700, color: col });
+    const box = (x, y, w, lab, t) => `<rect x="${x}" y="${y - 17}" width="${w}" height="34" rx="7" fill="${t ? C.textFill : C.encFill}" stroke="${t ? tcol : vcol}" stroke-width="1.6"/>` + T(x + w / 2, y + 6, lab, { size: 16, anchor: "middle", weight: 700, color: t ? C.textDark : C.encDark });
+    const norm = (x, y, col) => `<rect x="${x - 11}" y="${y - 11}" width="22" height="22" rx="6" fill="#fff" stroke="${col}" stroke-width="1.4"/>` + T(x, y + 4.7, "N", { size: 13.5, anchor: "middle", color: ink });
+    const plus = (x, y, col) => `<circle cx="${x}" cy="${y}" r="10" fill="#fff" stroke="${col}" stroke-width="1.6"/>` + T(x, y + 5.2, "+", { size: 16, anchor: "middle", weight: 700, color: col });
     // one modality: its stream (a token in, two residual adds, the token out) and its own modules
     const side = (t) => {
-      const y = t ? ys : yv, my = t ? Yt : Yv, col = t ? tcol : vcol, k = t ? "t" : "v", mod = t ? "text" : "vision", ly = t ? y - 17 : y + 31;
-      const back = y + (t ? 9 : -9); // where a module's output re-enters the stream
+      const y = t ? ys : yv, my = t ? Yt : Yv, col = t ? tcol : vcol, k = t ? "t" : "v", mod = t ? "text" : "vision", ly = t ? y - 22 : y + 32;
+      const back = y + (t ? 12 : -12); // where a module's output re-enters the stream (arrowheads end at the add's edge)
       return `<g class="${k}stream">` +
-        part(`${k}stream`, `<rect x="6" y="${y - 11}" width="${W - 12}" height="22" rx="11" fill="${t ? "#eef6ea" : "#eaf0ff"}"/>` + T(W / 2, ly, `${mod} residual stream`, { size: 13.5, anchor: "middle", color: t ? C.textDark : C.encDark }) +
-          ln(`M22,${y} L250,${y}`, col, false, 2.2) + ln(`M269,${y} L360,${y}`, col, false, 2.2) + ln(`M379,${y} L${W - 27},${y}`, col, true, 2.2)) +
-        T(8, ly, "x_{ℓ}", { size: 16.5, weight: 700 }) + T(W - 8, ly, "x_{ℓ+1}", { size: 16.5, weight: 700, anchor: "end" }) +
-        part(mod, hit(6, y - 11, 22, 22) + token(12, y, col), ` data-follow="${mod}"`) + part("out", hit(W - 28, y - 11, 22, 22) + token(W - 22, y, col)) +
-        part("add", plus(260, y, col)) + part("add", plus(370, y, col)) +
-        ln(`M26,${y} L26,${my} L36,${my}`, col) + part("norm", norm(46, my, col)) + ln(`M56,${my} L66,${my}`, col) + part(`${k}qkv`, box(68, my, 50, "QKV", t)) + ln(`M118,${my} L134,${my}`, col) +
-        ln(`M186,${my} L198,${my}`, col) + part(`${k}o`, box(200, my, 34, "O", t)) + ln(`M234,${my} L260,${my} L260,${back}`, col) +
-        ln(`M280,${y} L280,${my} L290,${my}`, col) + part("norm", norm(300, my, col)) + ln(`M310,${my} L320,${my}`, col) + part(`${k}ffn`, box(322, my, 44, "FFN", t)) + ln(`M366,${my} L370,${my} L370,${back}`, col) +
+        part(`${k}stream`, `<rect x="6" y="${y - 15}" width="${W - 12}" height="30" rx="15" fill="${t ? "#eef6ea" : "#eaf0ff"}"/>` + T(W / 2, ly, `${mod} residual stream`, { size: 14, anchor: "middle", color: t ? C.textDark : C.encDark }) +
+          ln(`M25,${y} L271,${y}`, col, false, 2.2) + ln(`M291,${y} L404,${y}`, col, false, 2.2) + ln(`M424,${y} L${W - 25},${y}`, col, true, 2.2)) +
+        T(10, ly, "x_{ℓ}", { size: 16.5, weight: 700 }) + T(W - 10, ly, "x_{ℓ+1}", { size: 16.5, weight: 700, anchor: "end" }) +
+        part(mod, hit(6, y - 11, 22, 22) + token(14, y, col), ` data-follow="${mod}"`) + part("out", hit(W - 28, y - 11, 22, 22) + token(W - 21, y, col)) +
+        part("add", plus(281, y, col)) + part("add", plus(414, y, col)) +
+        ln(`M26,${y} L26,${my} L36,${my}`, col) + part("norm", norm(48, my, col)) + ln(`M59,${my} L69,${my}`, col) + part(`${k}qkv`, box(71, my, 64, "QKV", t)) + ln(`M135,${my} L151,${my}`, col) +
+        ln(`M205,${my} L217,${my}`, col) + part(`${k}o`, box(219, my, 36, "O", t)) + ln(`M255,${my} L281,${my} L281,${back}`, col) +
+        ln(`M301,${y} L301,${my} L311,${my}`, col) + part("norm", norm(323, my, col)) + ln(`M334,${my} L344,${my}`, col) + part(`${k}ffn`, box(346, my, 62, "FFN", t)) + ln(`M408,${my} L414,${my} L414,${back}`, col) +
         `</g>`;
     };
     g += side(true) + side(false);
     // joint attention, spanning the two rows of modules
-    g += part("joint", `<rect x="136" y="${Yt - 18}" width="50" height="${Yv - Yt + 36}" rx="8" fill="${C.shared}" stroke="${C.sharedStroke}" stroke-width="1.6"/>` +
-      T(161, (Yt + Yv) / 2 + 5.5, "Attn", { size: 16, anchor: "middle", weight: 700, color: ink }));
+    g += part("joint", `<rect x="153" y="${Yt - 18}" width="52" height="${Yv - Yt + 36}" rx="8" fill="${C.shared}" stroke="${C.sharedStroke}" stroke-width="1.6"/>` +
+      T(179, (Yt + Yv) / 2 + 6, "Attn", { size: 16, anchor: "middle", weight: 700, color: ink }));
     return svgWrap(W, H, g, { fluid: true, label: "Mixture-of-transformers block: separate text and vision streams that interact only through joint attention", cls: "schematic" });
   }
 
   // ------------------------------------------------------- animation start
   /* Animated figures start once the reader is looking at them: when the figure's middle reaches the middle of the
-     screen (for a figure taller than the screen, its top reaches the top) and stays in the upper half for a moment, so
-     a jump or a fast scroll past it doesn't use it up. At the bottom of the page, being on screen is enough. fn runs once. */
+     screen (for a figure taller than the screen, its top reaches the top) and it stays there, or above with part of it
+     still on screen, for a moment. So a jump or a fast scroll past a figure doesn't use it up: it plays when the reader
+     comes back to it. At the bottom of the page, being on screen is enough; at the top, being three quarters on screen
+     (the teaser, when the reader scrolls back up to it). fn runs once.
+     Landing on the page (a load, a reload partway down, or a jump to a #section once its scroll comes to rest) also
+     starts every figure with at least three quarters of it on screen, so one that lands just short of mid-screen
+     isn't left waiting (the teaser plays this way when it shows on load).
+     whenPassed(el, fn) runs fn once el is wholly above the screen: a figure still playing then is finished, unseen. */
   const waiting = [];
   let queued = false, recheck = 0;
+  // "now": the next check is a landing; "pending": waiting for the scroll to rest after a load (the browser may still
+  // restore the scroll position, or scroll to a #section) or a jump (each scroll restarts the wait)
+  let landing = "loading", settle = 0;
+  function awaitLanding() { landing = "pending"; clearTimeout(settle); settle = setTimeout(() => { landing = "now"; queueCheck(); }, 250); }
+  // a load lands once the browser has restored the scroll position or scrolled to the #section; a plain load at the
+  // top lands at once, so the reader's first scroll isn't taken for part of the load
+  function landAfterLoad() { if (location.hash || window.scrollY > 0) awaitLanding(); else { landing = "now"; queueCheck(); } }
+  if (document.readyState === "complete") landAfterLoad(); else window.addEventListener("load", landAfterLoad);
+  window.addEventListener("hashchange", awaitLanding);
+  window.addEventListener("scroll", () => { if (landing === "pending") awaitLanding(); }, { passive: true });
   function checkWaiting() {
     queued = false;
     clearTimeout(recheck);
     const vh = window.innerHeight, now = performance.now();
     const atEnd = window.scrollY + vh >= document.documentElement.scrollHeight - 2;
+    const landed = landing === "now";
+    if (landed) landing = "";
+    const atTop = !landing && window.scrollY <= 2; // after the page has landed, so not mid-way into a load's jump
     let wait = 0;
+    const done = (w, f) => { waiting.splice(waiting.indexOf(w), 1); if (f) f(); };
     waiting.slice().forEach((w) => {
       const r = w.el.getBoundingClientRect(), mid = r.top + Math.min(r.height, vh) / 2;
-      if (!(r.height > 0 && r.top < vh && r.bottom > 0 && (atEnd || (mid >= 0 && mid <= vh / 2)))) { w.since = 0; return; }
+      if (!(r.height > 0)) { w.since = 0; return; }
+      if (w.passed) { if (r.bottom <= 0) done(w, w.passed); return; }
+      const most = Math.min(r.bottom, vh) - Math.max(r.top, 0) >= 0.75 * r.height;
+      if (landed && most) { done(w, w.fn); return; }
+      if (!(r.top < vh && r.bottom > 0 && (atEnd || mid <= vh / 2 || (atTop && most)))) { w.since = 0; return; }
       if (!w.since) w.since = now;
-      if (now - w.since >= 150) { waiting.splice(waiting.indexOf(w), 1); w.fn(); }
+      if (now - w.since >= 150) done(w, w.fn);
       else wait = Math.max(wait, 150 - (now - w.since));
     });
     if (wait) recheck = setTimeout(checkWaiting, wait + 5);
     if (!waiting.length) { window.removeEventListener("scroll", queueCheck); window.removeEventListener("resize", queueCheck); }
   }
   function queueCheck() { if (!queued) { queued = true; requestAnimationFrame(checkWaiting); } }
-  function whenCentered(el, fn) {
+  function watch(w) {
     if (!waiting.length) { window.addEventListener("scroll", queueCheck, { passive: true }); window.addEventListener("resize", queueCheck); }
-    waiting.push({ el, fn, since: 0 });
+    waiting.push(w);
     queueCheck();
   }
+  const whenCentered = (el, fn) => watch({ el, fn, since: 0 });
+  const whenPassed = (el, fn) => watch({ el, passed: fn });
 
-  window.Viz = { f1, C, RECIPE, T, rich, esc, scale, marker, glyph, layerStrip, legendLine, lineChart, dotPlot, stackedBars, infusionBlock, motBlock, flops, svgWrap, arrowDef, nextId, r1, placeArrowLabel, tag, whenCentered };
+  window.Viz = { f1, C, RECIPE, T, rich, esc, scale, marker, glyph, layerStrip, legendLine, lineChart, dotPlot, stackedBars, infusionBlock, motBlock, flops, svgWrap, arrowDef, nextId, r1, placeArrowLabel, tag, whenCentered, whenPassed };
 })();
