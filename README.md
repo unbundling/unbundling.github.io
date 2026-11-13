@@ -38,10 +38,10 @@ The card still uses the teaser classes (`.t-grid`, `.q-a` and so on) from the fi
 
 ## Before the arXiv release
 
-- [ ] Paper button: arXiv abstract URL (`data-todo="arxiv"` in `index.html`).
-- [ ] PDF button: arXiv PDF URL, or a hosted copy (`data-todo="pdf"`).
-- [ ] Thread button: tweet thread URL (`data-todo="thread"`).
-- [ ] BibTeX: replace `arXiv:2611.XXXXX`.
+- [x] arXiv button: arXiv abstract URL.
+- [x] PDF button: arXiv PDF URL, or a hosted copy.
+- [x] Threads: Ellis's and Chris's threads on X, one link each in the split pill.
+- [x] BibTeX: replace `arXiv:2611.XXXXX`.
 - [ ] Re-check numbers in `static/js/data.js` against the final paper.
 
 ## Planned

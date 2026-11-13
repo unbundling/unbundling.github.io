@@ -74,19 +74,19 @@ window.DATA = {
     {
       size: "1.7B", flops: "2.6×10^21", tpp: 158,
       rows: [
+        { key: "scratch", label: "Scratch encoder", params: "2.1B", vqa: 44.4, text: 49.7 },
         { key: "encoderFree", label: "Encoder-free", params: "1.7B", vqa: 39.0, text: 50.7 },
         { key: "wider", label: "+ wider", params: "2.1B", vqa: 38.6, text: 51.3 },
         { key: "deeper", label: "+ deeper", params: "2.1B", vqa: 38.7, text: 51.2 },
         { key: "both", label: "+ wider and deeper", params: "2.1B", vqa: 38.8, text: 51.4 },
-        { key: "scratch", label: "Scratch encoder", params: "2.1B", vqa: 44.4, text: 49.7 },
       ],
     },
     {
       size: "4B", flops: "1.16×10^22", tpp: 122,
       rows: [
+        { key: "scratch", label: "Scratch encoder", params: "4.4B", vqa: 51.9, text: 57.9 },
         { key: "encoderFree", label: "Encoder-free", params: "4.0B", vqa: 48.4487, text: 56.9616 },  // the run Fig. 3 plots
         { key: "wider", label: "+ wider", params: "4.4B", vqa: 48.1, text: 58.3 },
-        { key: "scratch", label: "Scratch encoder", params: "4.4B", vqa: 51.9, text: 57.9 },
       ],
     },
   ],

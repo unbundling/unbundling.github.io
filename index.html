@@ -79,15 +79,20 @@
   <p class="notes"><span><sup>*</sup>Equal contribution, ordered randomly</span> <span><sup>†</sup>Equal advising</span></p>
 
   <nav class="buttons" aria-label="Paper links">
+    <!-- arXiv's official small logomark (info.arxiv.org/brand/logos.html) in a single color, the button's, with its gray strokes
+         lighter than its red one as in the original -->
     <a class="btn primary" href="https://arxiv.org/abs/2611.17334">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.75h8.5L19.25 7.5v13.75H6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14.25 2.75V7.75h5M9 12h7M9 15.5h7M9 19h4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      Paper</a>
+      <svg viewBox="0 0 17.732 24.269" aria-hidden="true"><g transform="translate(-566.984 -271.548)" fill="currentColor"><path d="M573.549,280.916l2.266,2.738,6.674-7.84c.353-.47.52-.717.353-1.117a1.218,1.218,0,0,0-1.061-.748h0a.953.953,0,0,0-.712.262Z" opacity=".55"/><path d="M579.525,282.225l-10.606-10.174a1.413,1.413,0,0,0-.834-.5,1.09,1.09,0,0,0-1.027.66c-.167.4-.047.681.319,1.206l8.44,10.242h0l-6.282,7.716a1.336,1.336,0,0,0-.323,1.3,1.114,1.114,0,0,0,1.04.69A.992.992,0,0,0,571,293l8.519-7.92A1.924,1.924,0,0,0,579.525,282.225Z"/><path d="M584.32,293.912l-8.525-10.275,0,0L573.53,280.9l-1.389,1.254a2.063,2.063,0,0,0,0,2.965l10.812,10.419a.925.925,0,0,0,.742.282,1.039,1.039,0,0,0,.953-.667A1.261,1.261,0,0,0,584.32,293.912Z" opacity=".55"/></g></svg>
+      arXiv</a>
     <a class="btn" href="static/pdf/unbundling.pdf">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11m0 0-4.25-4.25M12 14.5l4.25-4.25M4.75 16.5v3.75h14.5V16.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.75h8.5L19.25 7.5v13.75H6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14.25 2.75V7.75h5M9 12h7M9 15.5h7M9 19h4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       PDF</a>
-    <a class="btn" href="#" data-todo="thread"><!-- TODO: X thread URL once posted; points to this page until then -->
+    <!-- the two co-leads' threads on X: one pill, split into a link for each -->
+    <span class="btn split" role="group" aria-label="Threads on X">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.75 3h3.07l-6.71 7.67L22 21h-6.18l-4.84-6.33L5.44 21H2.37l7.18-8.2L2 3h6.34l4.37 5.78zm-1.08 16.18h1.7L7.4 4.73H5.58z" fill="currentColor"/></svg>
-      Thread</a>
+      <a href="https://x.com/_ellisbrown/status/2121335477244428419" title="Ellis's thread on X" aria-label="Ellis Brown's thread on X">Ellis</a>
+      <a href="https://x.com/choang333/status/2121335484236386574" title="Chris's thread on X" aria-label="Chris Hoang's thread on X">Chris</a>
+    </span>
     <a class="btn" href="#citation">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 17.5c2.6-.6 3.9-2.4 3.9-5.3V7H4.5v5.2h2.1M13.5 17.5c2.6-.6 3.9-2.4 3.9-5.3V7h-3.9v5.2h2.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>
       BibTeX</a>
@@ -123,7 +128,7 @@
   <ul>
     <li><b>The prior is optional.</b> An encoder trained from scratch with the language model is on par with encoders pretrained on the same data. More encoder pretraining raises ImageNet accuracy but not VQA, even when it is free. <a class="jump" href="#prior">§3&nbsp;Visual prior&nbsp;↓</a></li>
     <li><b>Dedicated capacity is key.</b> Encoder-free models trail on visual understanding even when their backbone gets the encoder's parameters. From 1.7B to 6.4B backbones, they need about 3× the compute to match the encoder's Avg. VQA. <a class="jump" href="#capacity">§4&nbsp;Dedicated capacity&nbsp;↓</a></li>
-    <li><b>Vision capacity can sit inside the backbone.</b> Vision-only modules in the earlier backbone layers perform comparably to a pre-fusion encoder. <a class="jump" href="#placement">§5&nbsp;Placement&nbsp;↓</a></li>
+    <li><b>Vision capacity can sit inside the backbone.</b> Vision-only modules in early backbone layers perform comparably to a pre-fusion encoder. <a class="jump" href="#placement">§5&nbsp;Placement&nbsp;↓</a></li>
     <li><b>The findings hold beyond lifetime compute.</b> Added to a pretrained 1.7B language model, in-fusion stays comparable to the scratch encoder, while encoder-free falls further behind. In-fusion can also lower time to first token. <a class="jump" href="#practical">§6&nbsp;Beyond lifetime compute&nbsp;↓</a></li>
   </ul>
 </section>
@@ -174,7 +179,7 @@
       </div>
       <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button></div>
     </div>
-    <svg class="anim" viewBox="0 84 960 470" role="img" aria-label="Published models differ in data, training schedule, compute and backbone all at once, so no comparison between them is clean. We fix each to one common setting. Data: text from Nemotron-CC v2 and v2.1 and image–text pairs from MetaCLIP 1.2 (English subset). Training schedule: warmup–stable–decay (Hu et al., 2024; Wen et al., 2025; Hägele et al., 2024); budgets up to 2.9×10^22 FLOPs; one peak learning rate per backbone size. Lifetime compute: every training stage counts, including encoder pretraining, and recipes are compared at matched lifetime compute. Backbone: a dense decoder-only Transformer trained from scratch, following the Qwen3 1.7B and 4B configurations; encoders are 27-layer, 0.4B ViTs. Only the vision encoding differs: pretrained encoder, scratch encoder, encoder-free, and in-fusion."><g></g></svg>
+    <svg class="anim" viewBox="0 84 960 470" role="img" aria-label="Published models differ in data, training schedule, compute and backbone all at once, so no comparison between them is clean. We fix each to one common setting. Data: text from Nemotron-CC v2 and v2.1 and image–text pairs from MetaCLIP 1.2 (English subset). Training schedule: warmup–stable–decay (Hu et al., 2024; Wen et al., 2025; Hägele et al., 2024); budgets up to 2.9×10^22 FLOPs; one peak learning rate per backbone size. Lifetime compute: all training before instruction tuning counts, encoder pretraining too, and recipes are compared at matched lifetime compute. Backbone: a dense decoder-only Transformer trained from scratch, following the Qwen3 1.7B and 4B configurations; encoders are 27-layer, 0.4B ViTs. Only the vision encoding differs: pretrained encoder, scratch encoder, encoder-free, and in-fusion."><g></g></svg>
     <figcaption><b>Published models differ in everything at once.</b> We hold everything but the vision encoding recipe fixed.</figcaption>
   </figure>
   <p class="metrics">Every recipe pretrains on the same <button type="button" class="bench" data-bench="data" aria-expanded="false">text and image–text pairs</button>, with images at 224×224. <b>Avg. VQA</b> averages four category means over <button type="button" class="bench" data-bench="vqa" aria-expanded="false">16 Cambrian benchmarks</button>, after instruction tuning on Cambrian-7M with 448×448 images. <b>Avg. Text</b> does the same over <button type="button" class="bench" data-bench="text" aria-expanded="false">12 language benchmarks</button>.</p>
@@ -255,8 +260,8 @@ The text suggests that the program is highly recommended for those who have an i
       <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button><div class="seg" data-for="fig-ef" role="group" aria-label="Metric"><button data-metric="vqa" aria-pressed="true">Avg. VQA</button><button data-metric="text" aria-pressed="false">Avg. Text</button></div></div>
     </div>
     <div class="legend">
-      <span class="li"><span data-key="encoderFree"></span>Encoder-free</span>
       <span class="li"><span data-key="scratch"></span>Scratch encoder</span>
+      <span class="li"><span data-key="encoderFree"></span>Encoder-free</span>
     </div>
     <div class="ytitle" data-ytitle-for="trajEF">Avg. VQA (%)</div>
     <div class="chart" data-chart="trajEF" data-build></div>
@@ -276,7 +281,7 @@ The text suggests that the program is highly recommended for those who have an i
     <figcaption><b>Matching total parameters doesn't close the gap to a scratch encoder.</b> The added parameters improve Avg. Text, since text tokens use them too, but move Avg. VQA by at most 0.4 points.</figcaption>
   </figure>
 
-  <p>A richer patch embedding doesn't close it either. Trained on the same 224×224 images, a two-layer projection inspired by Gemma&nbsp;4 helps, scoring 40.5 Avg. VQA against 39.0 for the linear default, but stays well below the encoder's 44.4.</p>
+  <p>A richer patch embedding doesn't close it either. Trained on the same 224×224 images, a two-layer projection inspired by Gemma&nbsp;4 helps, scoring 40.5 Avg. VQA against 39.0 for the linear default, but stays well below the encoder's 44.4. A four-layer hierarchical MLP, as in Inkling, matches the encoder only when it compresses 640×640 images into the same 256 tokens.</p>
 
   <aside class="takeaway"><b>Takeaway 2: Visual understanding benefits from dedicated vision capacity.</b> Encoder-free models trail the from-scratch encoder on Avg. VQA. Adding backbone capacity with the same encoder parameter budget does not close the gap.</aside>
 </section>
@@ -327,8 +332,8 @@ The text suggests that the program is highly recommended for those who have an i
       <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button><div class="seg" data-for="fig-inf" role="group" aria-label="Metric"><button data-metric="vqa" aria-pressed="true">Avg. VQA</button><button data-metric="text" aria-pressed="false">Avg. Text</button></div></div>
     </div>
     <div class="legend">
-      <span class="li"><span data-key="encoderFree"></span>Encoder-free</span>
       <span class="li"><span data-key="scratch"></span>Scratch encoder</span>
+      <span class="li"><span data-key="encoderFree"></span>Encoder-free</span>
       <span class="li"><span data-key="infusion"></span>In-fusion</span>
     </div>
     <div class="ytitle" data-ytitle-for="trajInf">Avg. VQA (%)</div>
@@ -352,8 +357,8 @@ The text suggests that the program is highly recommended for those who have an i
       <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button></div>
     </div>
     <div class="legend">
-      <span class="li"><span data-key="encoderFree"></span>Encoder-free</span>
       <span class="li"><span data-key="scratch"></span>Scratch encoder</span>
+      <span class="li"><span data-key="encoderFree"></span>Encoder-free</span>
       <span class="li"><span data-key="infusion"></span>In-fusion</span>
     </div>
     <div class="chart" data-chart="ladder" data-build></div>
@@ -395,7 +400,7 @@ The text suggests that the program is highly recommended for those who have an i
       <div class="vh-tools"><button class="replay" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M9.2 4.45A3.7 3.7 0 1 1 6 2.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7.6 2.6L5.2 0.85v3.5z" fill="currentColor"/></svg>Replay</button></div>
     </div>
     <div class="legend">
-      <span class="li"><span data-key="scratch"></span>Scratch encoder</span>
+      <span class="li"><span data-key="scratch"></span>Encoder</span>
       <span class="li"><span data-key="motEarly"></span>MoT (first <i>k</i> layers)</span>
       <span class="li"><span data-key="infusion"></span>In-fusion</span>
       <span class="li"><span data-key="infusionFFN"></span>In-fusion (FFN-only)</span>
@@ -403,7 +408,7 @@ The text suggests that the program is highly recommended for those who have an i
     <div class="chart" data-chart="ttft" data-build></div>
     <figcaption><b>In-fusion serves images faster than the encoder at every vision-only budget.</b> Designs are parameter-matched at each budget on the 1.7B backbone, to MoT copies of the first <i>k</i> layers (numbers beside MoT's points).</figcaption>
   </figure>
-  <p>MoT, which copies whole backbone layers for vision tokens, is about as fast as in-fusion up to 0.4B vision-only parameters, but its added time grows faster with the budget, while staying below the encoder's. The encoder-free model is fastest, but at 1.7B and 2.6×10<sup>21</sup> FLOPs it trails the encoder by 5.4 Avg. VQA points.</p>
+  <p>In-fusion's advantage over the encoder grows with the vision-only budget, which scales with the backbone. MoT, which copies whole backbone layers for vision tokens, is about as fast as in-fusion up to 0.4B vision-only parameters, but its added time grows faster with the budget, while staying below the encoder's. The encoder-free model is fastest, but at 1.7B and 2.6×10<sup>21</sup> FLOPs it trails the encoder by 5.4 Avg. VQA points.</p>
 
   <aside class="takeaway"><b>Takeaway 4: Our findings hold beyond lifetime compute, and in-fusion can be faster to serve.</b> A free pretrained encoder still does not help, the comparisons carry over to midtraining, and in-fusion lowers time to first token at comparable VQA.</aside>
 </section>
@@ -420,7 +425,7 @@ The text suggests that the program is highly recommended for those who have an i
          protocol figure; free pretraining: Fig. 2 right panel and §6 -->
     <details>
       <summary>Why count lifetime compute?</summary>
-      <p>A pretrained encoder brings compute and data of its own that comparisons usually leave out. SigLIP&nbsp;2, for example, trains on 40B image–text samples. Counting only the multimodal stage lets a recipe look better just because it spent more in total. Lifetime compute counts every stage that produces the final model: encoder pretraining, any text-only training, and multimodal training. That is the question a team with a fixed budget faces: if a recipe spends 15% of its budget pretraining the encoder, that 15% is not spent on multimodal training. We compare recipes at matched lifetime compute, with budgets from 6.5×10<sup>20</sup> to 2.9×10<sup>22</sup> FLOPs. The findings don't rest on this accounting alone: a pretrained encoder doesn't help <a href="#prior">even when its pretraining is free</a>.</p>
+      <p>A pretrained encoder brings compute and data of its own that comparisons usually leave out. SigLIP&nbsp;2, for example, trains on 40B image–text samples. Counting only the multimodal stage lets a recipe look better just because it spent more in total. Lifetime compute counts every stage that produces the final model: encoder pretraining, any text-only training, and multimodal training. That is the question a team with a fixed budget faces: if a recipe spends 15% of its budget pretraining the encoder, that 15% is not spent on multimodal training. We compare recipes at matched lifetime compute, with budgets from 6.5×10<sup>20</sup> to 2.9×10<sup>22</sup> FLOPs. Instruction tuning, a fixed step applied to every checkpoint to measure VQA, is not counted. The findings don't rest on this accounting alone: a pretrained encoder doesn't help <a href="#prior">even when its pretraining is free</a>.</p>
     </details>
     <!-- encoder shape: §2's protocol figure and the paper's App. A (MoonViT-V2; So400m shape, Alabdulmohsin et al.); same
          images: §3; four objectives: §3; ImageNet 80.4% and 84.4%: Fig. 7 (data.js freePretraining), full-data probe with the DINOv2 linear evaluation (paper, sec:appx:probe);

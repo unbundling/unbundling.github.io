@@ -180,7 +180,7 @@
     { id: "data", label: "Data", fixed: "Data", lines: ["Text from Nemotron-CC v2 and v2.1", "Image–text pairs from MetaCLIP 1.2 (English subset)"] },
     // the schedule's references are the paper's for warmup-stable-decay (Sec. 2), linked to their papers
     { id: "schedule", label: "Training schedule", fixed: "Training schedule", lines: ["Warmup–stable–decay schedule ([Hu et al., 2024](https://arxiv.org/abs/2404.06395); [Wen et al., 2025](https://arxiv.org/abs/2410.05192); [Hägele et al., 2024](https://arxiv.org/abs/2405.18392))", "Budgets up to 2.9×10^{22} FLOPs", "One peak learning rate per backbone size"] },
-    { id: "compute", label: "Compute", fixed: "Lifetime compute", eq: "C_{lifetime} = Σ_{s} C_{s}", lines: ["Every training stage counts, including encoder pretraining", "Recipes are compared at matched *lifetime* compute"] },
+    { id: "compute", label: "Compute", fixed: "Lifetime compute", eq: "C_{lifetime} = Σ_{s} C_{s}", lines: ["All training before instruction tuning counts, encoder pretraining too", "Recipes are compared at matched *lifetime* compute"] },
     { id: "backbone", label: "Backbone", fixed: "Backbone", lines: ["Dense decoder-only Transformer, trained from scratch", "Follows the Qwen3 1.7B and 4B configurations", "Encoders are 27-layer, 0.4B ViTs"] },
   ];
   // gh, bm: the header glyphs' height and the band's side margin; XM, YM: where a row's cells merge (YM from the row); dx, dw, dfs, dlh, dy: the listed settings' left edge, width, size,

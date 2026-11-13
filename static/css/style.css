@@ -102,6 +102,13 @@ p { text-wrap: pretty; }
 .btn:hover { background: #eceef1; border-color: #c9ced4; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn.primary:hover { background: var(--accent-d); border-color: var(--accent-d); }
+/* the threads: one pill split into a link for each, with its own hover, and a hairline between the two */
+.btn.split { padding: 0 0 0 15px; gap: 0; overflow: hidden; }
+.btn.split:hover { background: #f4f5f7; border-color: #d9dde2; }
+.btn.split a { align-self: stretch; display: flex; align-items: center; padding: 8px 12px 8px 8px; background-image: none; transition: background .15s; }
+.btn.split a + a { padding: 8px 17px 8px 12px; border-left: 1px solid #d9dde2; }
+.btn.split a:hover { background: #eceef1; }
+.btn.split a:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 
 /* ------------------------------------------------------------------ teaser: the three questions, answered in turn */
 .teaser { margin: 34px 0 0; }
@@ -415,6 +422,9 @@ figcaption b { color: var(--ink); font-weight: 700; }
   .notes { font-size: 15px; }
   .buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 148px)); justify-content: center; gap: 9px; }
   .btn { justify-content: center; font-size: 16.5px; }
+  .btn.split { padding-left: 12px; }
+  .btn.split a { padding: 8px 9px 8px 7px; }
+  .btn.split a + a { padding: 8px 13px 8px 9px; }
   h2 { font-size: 28px; }
   .kicker { font-size: 13.5px; }
   .kicker.kq { font-size: 17px; }

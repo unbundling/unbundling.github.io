@@ -223,10 +223,11 @@
   /* spec: {
        panels: [{ title, x: {domain, log, ticks:[[v,label]], label}, y: {domain, ticks, label, fmt},
                   series: [{key, name, color, marker, points:[[x,y]], dash, lw, noMarkers, labelEnd}],
-                  ann: [{type:"arrow", from:[x,y], to:[x,y], label, labelDy}, {type:"hline", y, color, label}, {type:"text", x, y, text},
+                  ann: [{type:"arrow", from:[x,y], to:[x,y], label, labelDy}, {type:"hline", y, color, label}, {type:"text", x, y, text, b},
                         {type:"eq", text, fx, fy, va}],
                   xinfo: (x) => string }],
-       minPanelW, height, gap } */
+       minPanelW, height, gap }
+     A text annotation's b is its data-b, the role a figure build finds it by ("note" by default). */
   // adds attributes to the first element of an SVG snippet (figure builds find marks by data-b; pixels don't change)
   const tag = (svg, attrs) => svg.replace(/^<([a-z]+)/, `<$1 ${attrs}`);
 
@@ -304,7 +305,7 @@
         } else if (a.type === "text") {
           const x = a.px ? cx + a.x * pw : sx(a.x), y = a.py ? cy + a.y * ph : sy(a.y);
           (Array.isArray(a.text) ? a.text : [a.text]).forEach((line, k) => {
-            p += tag(T(x, y + k * (fs + 3), line, { size: a.size || fs - 0.5, color: a.color || C.muted, anchor: a.anchor, italic: a.italic, weight: a.weight, halo: true }), 'data-b="note"');
+            p += tag(T(x, y + k * (fs + 3), line, { size: a.size || fs - 0.5, color: a.color || C.muted, anchor: a.anchor, italic: a.italic, weight: a.weight, halo: true }), `data-b="${a.b || "note"}"`);
           });
         } else if (a.type === "eq") {
           // a law's general form in a box, placed at a fraction of the plot area (fy is the box's top, or its bottom with va "bottom")

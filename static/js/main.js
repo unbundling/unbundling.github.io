@@ -365,9 +365,9 @@
       x: { domain: [36, 52.5], ticks: [36, 38, 40, 42, 44, 46, 48, 50, 52], label: "Avg. VQA (%)" },
       second: { domain: [48.5, 59.5], ticks: [50, 54, 58], label: "Avg. Text (%)", short: "Avg. Text" },
       legend: [
+        { name: "Scratch encoder", color: C.enc, marker: "circle" },
         { name: "Encoder-free", color: C.ef, marker: "square" },
         { name: "Encoder-free + the encoder's parameters", color: EF_PLUS, marker: "square" },
-        { name: "Scratch encoder", color: C.enc, marker: "circle" },
       ],
     });
   };
@@ -413,6 +413,8 @@
       // each panel's law in general form, boxed in the corner the paper uses (Fig. 6: VQA top left, caption loss bottom left)
       ann.push(isV ? { type: "eq", text: "VQA(*N*, *D*) = *c* + *b*_{1} ln *N* + *b*_{2} ln *D*", fx: 0.02, fy: 0.03 }
         : { type: "eq", text: "*L*(*N*, *D*) = *E* + *A N*^{−α} + *B D*^{−β}", fx: 0.02, fy: 0.97, va: "bottom" });
+      // as in the paper: below encoder-free's law on Avg. VQA, above it on caption loss
+      ann.push({ type: "text", b: "gap", x: 2.3e21, y: isV ? 32.6 : 1.3, text: ["Encoder-free needs", "≈3× the compute"], weight: 700, color: C.ink });
       return {
         title: isV ? "Avg. VQA (%)" : "Held-out caption loss", subtitle: isV ? "higher is better" : "lower is better",
         x: { domain: xdom, log: true, ticks: xt, label: "Lifetime compute (FLOPs)" },
@@ -449,7 +451,7 @@
   // Figure 9: time to first token added over encoder-free, at budgets matched to MoT copies of the first k layers
   FIG.ttft = (w) => {
     const T9 = D.ttft, keys = ["scratch", "infusion", "infusionFFN", "motEarly"]; // MoT last, so its squares sit on top
-    const name = { motEarly: "MoT (first k layers)" };
+    const name = { scratch: "Encoder", motEarly: "MoT (first k layers)" };
     const series = keys.map((k) => ({ key: k, name: name[k] || RC[k].name, color: RC[k].color, marker: RC[k].marker, points: T9.series[k], r: 4.8 }));
     const mot = T9.series.motEarly, narrow = w < 480;
     // MoT's k beside each of its points, placed clear of the other lines (as in the paper)
@@ -570,8 +572,8 @@
     });
     return { anims: A, dur: 650 + ms + 300 };
   };
-  // Figure 6: encoder-free's and the encoder's laws and runs sweep in, then the arrows show encoder-free's compute gap
-  // growing with size; last, in-fusion's law sweeps in on top of the encoder's
+  // Figure 6: encoder-free's and the encoder's laws and runs sweep in, then each panel's arrow and its note show
+  // encoder-free's compute gap; last, in-fusion's law sweeps in on top of the encoder's
   BUILD.ladder = (el, at0) => {
     const A = [], ms = 1400, isInf = (m) => (m.dataset.s || "").startsWith("infusion");
     let end = at0;
@@ -587,6 +589,8 @@
         A.push(wipe(ln, t, 420, +ln.getAttribute("x1") > +ln.getAttribute("x2")));
         if (lab && lab.dataset.b === "arrow") A.push(fade(lab, t + 320, 320));
       });
+      // the note follows the last arrow's factor
+      p.querySelectorAll('[data-b="gap"]').forEach((t) => A.push(fade(t, at0 + ms + 200 + Math.max(0, arrows.length - 1) * 320 + 480, 400)));
       end = Math.max(end, t1 + ms + 300);
     });
     return { anims: A, dur: end - at0 };
