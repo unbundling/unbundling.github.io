@@ -252,7 +252,7 @@
     if (p1 - p0 > 0.5) {
       g += `<rect x="${r1(cx + p0)}" y="${y}" width="${r1(p1 - p0)}" height="${h}" rx="3" fill="${mix("#fdf0e6", C.pre, e)}" stroke="${C.pre}" stroke-width="1.4"${e < 0.5 ? ' stroke-dasharray="4 3"' : ""}/>`;
       // the label keeps its size when the cell is drawn smaller; on the tall layout it starts at the bar, clear of the edge
-      g += V.T(TALL ? cx + p0 : cx + (p0 + p1) / 2, y - 6 - (1 / GR.cs - 1) * 3, "pretraining", { size: r1(12.5 / GR.cs), anchor: TALL ? "start" : "middle", color: C.preDark });
+      g += V.T(TALL ? cx + p0 : cx + (p0 + p1) / 2, y - 6 - (1 / GR.cs - 1) * 3, "pretraining", { size: r1(12.5 / GR.cs), anchor: TALL ? "start" : "middle", color: C.pre, weight: 600 }); // in the bar's own orange
     }
     return g;
   }

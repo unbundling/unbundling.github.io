@@ -127,6 +127,9 @@ p { text-wrap: pretty; }
 
 /* ------------------------------------------------------------------ summary + key message */
 .summary { margin: 34px 0 0; }
+.summary > p { margin: 0 0 18px; text-wrap: pretty; }
+/* the findings follow the setup under their own small heading */
+.summary .sum-head { margin: 0 0 8px; font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
 .summary ul { list-style: none; padding: 0; margin: 0; }
 .summary li { position: relative; padding-left: 24px; margin: 0 0 14px; text-wrap: pretty; }
 .summary li::before { content: ""; position: absolute; left: 5px; top: .72em; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
@@ -139,7 +142,8 @@ p { text-wrap: pretty; }
 }
 .key p { margin: 0; }
 .key b { font-weight: 700; }
-.key .key-2 { font-style: italic; margin-top: 4px; opacity: .93; }
+/* the placement caption's key: inline copies of the strips' gray layers and blue modules */
+.strip-key svg { display: inline-block; vertical-align: -1px; margin: 0 1px; }
 
 /* ------------------------------------------------------------------ sections */
 section { margin-top: 72px; }
@@ -236,6 +240,17 @@ figcaption b { color: var(--ink); font-weight: 700; }
 /* ------------------------------------------------------------------ bundle diagram + recipe table */
 .bundle-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 26px; align-items: center; }
 .bundle-grid > * { min-width: 0; }
+/* the recipe table needs about 420 px beside the diagram; in a narrower figure (beside the side list, or on tablets) the
+   two stack, with the diagram kept to a readable size */
+.bundle-fig { container-type: inline-size; }
+@container (max-width: 939px) {
+  .bundle-grid { grid-template-columns: 1fr; }
+  .bundle { width: 100%; max-width: 540px; margin: 0 auto; }
+  .recipes-col { width: 100%; max-width: 640px; margin: 0 auto; }
+}
+.recipes-col .hint { margin: 10px 0 0 6px; font-size: 15px; font-style: italic; color: var(--faint); }
+.hint-tap { display: none; }
+@media (hover: none) and (pointer: coarse) { .hint-hover { display: none; } .hint-tap { display: inline; } }
 .bundle svg { width: 100%; height: auto; display: block; overflow: visible; }
 .b-call { transition: opacity .45s; }
 .b-call.dropped { opacity: .38; }
@@ -328,26 +343,39 @@ figcaption b { color: var(--ink); font-weight: 700; }
 .ex-next { font: inherit; font-size: 13.5px; color: var(--muted); background: none; border: 0; padding: 2px 0 0; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
 .ex-next:hover { color: var(--ink); }
 
-/* ------------------------------------------------------------------ contents: side list on wide screens, tab bar below */
+/* ------------------------------------------------------------------ contents: side list on wide screens, menu below */
 .toc .sec, .tabs .sec { color: var(--faint); font-variant-numeric: tabular-nums; margin-right: .45em; }
 .toc a.on .sec, .tabs a.on .sec { color: var(--accent-d); }
 .toc { display: none; }
+/* below the side list's breakpoint: a sticky bar names the current section; its button opens every section, so none is cut off */
 .tabs { position: sticky; top: 0; z-index: 20; background: rgba(255, 255, 255, .96); backdrop-filter: blur(6px); border-bottom: 1px solid var(--rule); margin: 0 -24px; padding: 0 24px; }
-.tabs ol { list-style: none; margin: 0; padding: 0; display: flex; gap: 22px; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
-.tabs ol::-webkit-scrollbar { display: none; }
-/* the right-edge fade hints at more tabs, so it goes once the bar is scrolled to its end (main.js sets .at-end) */
-.tabs ol.at-end { -webkit-mask-image: none; mask-image: none; }
-.tabs li { flex: none; }
-.tabs a { display: block; white-space: nowrap; padding: 12px 0 10px; border-bottom: 2px solid transparent; font-size: 16px; color: var(--ink-2); }
+.tabs-btn { display: flex; align-items: center; gap: 9px; width: 100%; height: 47px; padding: 0; border: 0; background: none; font: inherit; font-size: 16px; color: var(--ink); cursor: pointer; text-align: left; }
+.tabs-btn > svg { width: 16px; height: 16px; flex: none; color: var(--muted); }
+.tabs-label { color: var(--faint); flex: none; }
+.tabs-label::after { content: ""; display: inline-block; width: 1px; height: 15px; background: var(--rule); margin-left: 9px; vertical-align: -2px; }
+.tabs-cur { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tabs-cur .sec { margin-right: .45em; }
+.tabs-btn .tabs-chev { width: 12px; height: 12px; transition: transform .15s; }
+.tabs.open .tabs-chev { transform: rotate(180deg); }
+.tabs-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* the list drops over the page, so opening it moves nothing */
+.tabs ol { display: none; position: absolute; left: 0; right: 0; top: 100%; max-height: calc(100vh - 60px); overflow-y: auto; list-style: none; margin: 0; padding: 6px 24px 12px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); background: #fff; box-shadow: 0 12px 20px -12px rgba(0, 0, 0, .22); }
+.tabs.open ol { display: block; }
+.tabs a { display: block; padding: 8px 0 8px 12px; border-left: 2px solid transparent; font-size: 16.5px; color: var(--ink-2); }
 .tabs a:hover { color: var(--ink); }
-.tabs a.on { color: var(--ink); border-bottom-color: var(--accent); }
+.tabs a.on { color: var(--ink); border-left-color: var(--accent); }
 :root { --tabs-h: 48px; }
-@media (min-width: 1320px) {
-  :root { --wide: min(980px, calc(100vw - 460px)); --tabs-h: 0px; }
+/* The side list needs 236 px left of the wide figures. Up to about 1450 px the page shifts right by --side (0 to 232 px)
+   to make that room, and wide figures narrow to what is left, so the list fits from 1080 px up. */
+@media (min-width: 1080px) {
+  :root { --side: clamp(0px, calc(1452px - 100vw), 232px); --wide: min(980px, calc(100vw - var(--side) - 40px)); --tabs-h: 0px; }
+  body { padding-left: var(--side); }
+  .wide.narrowish { width: min(820px, var(--wide)); }
+  .authors { width: min(1000px, calc(var(--wide) + 20px)); }
   .tabs { display: none; }
   .toc {
     display: block; position: fixed; top: 96px; width: 196px;
-    left: max(20px, calc(50% - var(--wide) / 2 - 232px)); font-size: 15.5px; line-height: 1.38;
+    left: max(20px, calc((100vw + var(--side) - var(--wide)) / 2 - 232px)); font-size: 15.5px; line-height: 1.38;
   }
   .toc .toc-label { font-size: 13.5px; letter-spacing: .12em; text-transform: uppercase; color: #737b85; margin: 0 0 10px; }
   .toc ol { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--rule-2); }
@@ -381,6 +409,7 @@ figcaption b { color: var(--ink); font-weight: 700; }
   body { font-size: 17.5px; }
   .page { padding: 0 18px; }
   .tabs { margin: 0 -18px; padding: 0 18px; }
+  .tabs ol { padding: 6px 18px 12px; }
   .hero { padding-top: 40px; }
   .authors { font-size: 16.5px; }
   .notes { font-size: 15px; }

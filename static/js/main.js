@@ -1,6 +1,6 @@
 /* ==========================================================================
    Page behavior: draws every figure from DATA, wires tooltips and toggles, builds figures when they reach the middle of
-   the screen, animates the bundle diagram, and runs the contents list and tab bar. The teaser and the protocol grid are
+   the screen, animates the bundle diagram, and runs the contents list and contents menu. The teaser and the protocol grid are
    anim.js.
    ========================================================================== */
 (function () {
@@ -410,6 +410,9 @@
       });
       const ann = vals.multipliers.map((M) => ({ type: "arrow", from: [M.to / 1.04, M.y], to: [M.from * 1.04, M.y], label: M.label, prefer: isV ? "right" : "left" }));
       if (isV) L.sizes.forEach((s, i) => ann.push({ type: "text", x: L.x[i], y: 24.7, text: s, anchor: "middle", size: 13, color: C.faint }));
+      // each panel's law in general form, boxed in the corner the paper uses (Fig. 6: VQA top left, caption loss bottom left)
+      ann.push(isV ? { type: "eq", text: "VQA(*N*, *D*) = *c* + *b*_{1} ln *N* + *b*_{2} ln *D*", fx: 0.02, fy: 0.03 }
+        : { type: "eq", text: "*L*(*N*, *D*) = *E* + *A N*^{−α} + *B D*^{−β}", fx: 0.02, fy: 0.97, va: "bottom" });
       return {
         title: isV ? "Avg. VQA (%)" : "Held-out caption loss", subtitle: isV ? "higher is better" : "lower is better",
         x: { domain: xdom, log: true, ticks: xt, label: "Lifetime compute (FLOPs)" },
@@ -897,6 +900,13 @@
     el.innerHTML = V.legendLine(k, { noLine: el.hasAttribute("data-noline") });
   });
   document.querySelectorAll("[data-strip]").forEach((el) => { el.innerHTML = V.layerStrip(el.dataset.strip); });
+  // the placement caption's key: gray layers (all tokens) and blue vision-only modules, drawn as in the strips
+  document.querySelectorAll("[data-strip-key]").forEach((el) => {
+    const vis = el.dataset.stripKey === "vis";
+    const bars = [0, 1, 2].map((k) => vis ? `<rect x="${k * 5.3}" y="6.5" width="3.6" height="5.5" rx="1" fill="${C.enc}"/>`
+      : `<rect x="${k * 5.3}" y="2" width="3.6" height="10" rx="1" fill="#c3c8ce"/>`).join("");
+    el.innerHTML = `<svg width="15" height="12" viewBox="0 0 15 12" aria-hidden="true">${bars}</svg>`;
+  });
 
   // ------------------------------------------------------------ bundle diagram
   /* One glyph that morphs between the four recipes: pills (dedicated capacity) change color when the prior is dropped,
@@ -1024,8 +1034,8 @@
     }
   }
 
-  // ------------------------------------------------------------ contents: side list and tab bar
-  /* Each list marks the last of its own entries the reader has passed, so the tab bar, which lists only top-level
+  // ------------------------------------------------------------ contents: side list and menu
+  /* Each list marks the last of its own entries the reader has passed, so the menu, which lists only top-level
      sections, keeps §5 marked while the side list marks §5.4. */
   const navs = [...document.querySelectorAll(".toc, .tabs")].map((n) => {
     const links = [...n.querySelectorAll("a")];
@@ -1043,23 +1053,21 @@
         if (c === v.cur) return;
         v.cur = c;
         v.links.forEach((a, i) => a.classList.toggle("on", i === c));
-        // keep the marked tab in view when the tab bar scrolls sideways
-        const a = v.links[c];
-        if (v.n.classList.contains("tabs") && v.n.offsetParent) {
-          const ol = a.closest("ol"), r = a.getBoundingClientRect(), rr = ol.getBoundingClientRect();
-          if (r.left < rr.left || r.right > rr.right - 40) ol.scrollBy({ left: r.left - rr.left - 8, behavior: reduceMotion ? "auto" : "smooth" });
-        }
+        // the menu bar names the section the reader is in
+        if (v.n.classList.contains("tabs")) { const cur = v.n.querySelector(".tabs-cur"); if (cur) cur.innerHTML = v.links[c].innerHTML; }
       });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
-    // the tab bar's right-edge fade hints at more tabs; it goes once the bar is scrolled to its end (or doesn't scroll)
-    const tabList = document.querySelector(".tabs ol");
-    if (tabList) {
-      const edge = () => tabList.classList.toggle("at-end", tabList.scrollLeft + tabList.clientWidth >= tabList.scrollWidth - 2);
-      tabList.addEventListener("scroll", edge, { passive: true });
-      window.addEventListener("resize", edge);
-      edge();
+    // the menu opens the full list under the bar; a pick, Escape, or a press elsewhere closes it
+    const tabs = document.querySelector(".tabs"), tabsBtn = tabs && tabs.querySelector(".tabs-btn");
+    if (tabsBtn) {
+      const setOpen = (o) => { tabs.classList.toggle("open", o); tabsBtn.setAttribute("aria-expanded", String(o)); };
+      tabsBtn.addEventListener("click", () => setOpen(!tabs.classList.contains("open")));
+      tabs.querySelectorAll("ol a").forEach((a) => a.addEventListener("click", () => setOpen(false)));
+      tabs.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && tabs.classList.contains("open")) { setOpen(false); tabsBtn.focus(); } });
+      document.addEventListener("pointerdown", (ev) => { if (!tabs.contains(ev.target)) setOpen(false); }, true);
+      window.addEventListener("resize", () => setOpen(false));
     }
   }
 

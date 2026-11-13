@@ -223,7 +223,8 @@
   /* spec: {
        panels: [{ title, x: {domain, log, ticks:[[v,label]], label}, y: {domain, ticks, label, fmt},
                   series: [{key, name, color, marker, points:[[x,y]], dash, lw, noMarkers, labelEnd}],
-                  ann: [{type:"arrow", from:[x,y], to:[x,y], label, labelDy}, {type:"hline", y, color, label}, {type:"text", x, y, text}],
+                  ann: [{type:"arrow", from:[x,y], to:[x,y], label, labelDy}, {type:"hline", y, color, label}, {type:"text", x, y, text},
+                        {type:"eq", text, fx, fy, va}],
                   xinfo: (x) => string }],
        minPanelW, height, gap } */
   // adds attributes to the first element of an SVG snippet (figure builds find marks by data-b; pixels don't change)
@@ -305,6 +306,13 @@
           (Array.isArray(a.text) ? a.text : [a.text]).forEach((line, k) => {
             p += tag(T(x, y + k * (fs + 3), line, { size: a.size || fs - 0.5, color: a.color || C.muted, anchor: a.anchor, italic: a.italic, weight: a.weight, halo: true }), 'data-b="note"');
           });
+        } else if (a.type === "eq") {
+          // a law's general form in a box, placed at a fraction of the plot area (fy is the box's top, or its bottom with va "bottom")
+          const size = a.size || fs - 1.5, padX = 7, padY = 4;
+          const w = textW(a.text.replace(/[*{}^_]/g, ""), size) + 2 * padX, h = size + 2 * padY + 4;
+          const x = X0 + a.fx * (X1 - X0), y = Y1 + a.fy * (Y0 - Y1) - (a.va === "bottom" ? h : 0);
+          p += `<g data-b="note"><rect x="${r1(x)}" y="${r1(y)}" width="${r1(w)}" height="${r1(h)}" fill="#fff" stroke="#c9ced4" stroke-width="0.8"/>` +
+            `<text x="${r1(x + padX)}" y="${r1(y + padY + size * 0.9)}" font-size="${size}" fill="${C.ink}">${rich(a.text, size)}</text></g>`;
         } else if (a.type === "floor") {
           // a horizontal segment drawn at the bottom of the plot (e.g., encoder pretraining spent before training starts)
           p += `<line x1="${r1(sx(a.x0))}" x2="${r1(sx(a.x1))}" y1="${r1(Y0 - 1)}" y2="${r1(Y0 - 1)}" stroke="${a.color}" stroke-width="3.2"/>`;
